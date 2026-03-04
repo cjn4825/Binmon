@@ -15,8 +15,5 @@ $(TARGET): $(OBJECTS)
 $(BINDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR):
-	mkdir -p $(BINDIR)
-
 clean:
-	rm -rf $(BINDIR)
+	rm -rf $(BINDIR)/*

@@ -1,2 +1,4 @@
-/bin/*
-/registryinfo/registry.txt
+binmon
+bin/
+registryinfo/*
+!registryinfo/.gitkeep
