@@ -211,6 +211,16 @@ void update_stats(struct proc_info *p_info, char *p_pid){
 // seconds = uptime - (starttime / Hertz)
 // cpu_usage = 100 * ((total_time / Hertz) / seconds)
 
+
+
+
+////// when a new pid number exists then just add it
+/// index + 1 space in data struct
+///
+/// also if a pid is updated if it was prevously
+/// stoped and started again add another field
+
+
 void update_exe(struct proc_info *p_info, char* exe){
     struct stat file_stats;
     if(stat(exe, &file_stats) == 0){
@@ -246,9 +256,9 @@ void scan_procs(struct proc_info *p_info){
     while ((p_entry = readdir(p_dir)) != NULL) {
         if(isdigit(p_entry->d_name[0])){
 
-            // create grouping of pid values 
-            // where they can be passed around 
-            // to different functions and this will be 
+            // create grouping of pid values
+            // where they can be passed around
+            // to different functions and this will be
             // dynamically updated here
             char pid = p_entry->d_name[0];
             char path[PATH_MAX];

@@ -22,6 +22,7 @@ typedef struct {
     u_int8_t mem_is_increasing; // mem_usage math
     char is_running;            // stat location 3
     char is_old;                // DONE
+    char previous_ran;          // DONE
     char *exe_path;             // ???
     char *comm;                 // stat location 1
 } proc_data_t;
