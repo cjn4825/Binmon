@@ -8,7 +8,7 @@
 #define RESIZE_PERCENTAGE .90   // What percent full until resizing
 #define DELTA_SCAN 0.5          // How many seconds a scan happens
 #define DEFAULT_MAX 64          // default max until reallocating is needed
-#define DEFAULT_OLD 2592000     // how many days in seconds until a process is old
+#define DEFAULT_OLD 2592000     // how many days in seconds until a process is old(30 days)
 
 typedef struct {
     u_int64_t first_seen;
@@ -16,11 +16,13 @@ typedef struct {
     u_int64_t last_modified;    // found in stat(exe) DONE
     double cpu_usage;           // stat loc (14, 15)/
     double mem_usage;           // /proc/pid/smaps_rollup Pss
-    pid_t pid;                  // stat location 2
-    pid_t ppid;                 // stat location 4
-    u_int8_t cpu_is_increasing; // cpu_usage math
-    u_int8_t mem_is_increasing; // mem_usage math
-    char is_running;            // stat location 3
+    double start;
+    int pid;                    // stat location 2
+    int ppid;                 // stat location 4
+    u_int8_t cpu_up;            // cpu_usage math
+    u_int8_t mem_up;            // mem_usage math
+    char state;                 // stat location 3
+        /// switch to u_int8_t ???
     char is_old;                // DONE
     char previous_ran;          // DONE
     char *exe_path;             // ???

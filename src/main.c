@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <ctype.h>
 #include <linux/limits.h>
 #include <stddef.h>
@@ -61,26 +62,30 @@ void load_state(struct proc_info *p_info){
             "PID: %d \
             | NAME: %255s \
             | PPID: %d \
-            | TOTAL_AGE: %"SCNu64" \
             | FIRST_SEEN: %"SCNu64" \
             | LAST_ACCESS: %"SCNu64" \
-            | AVG_CPU: %lf%% \
-            | AVG_MEM: %lf%% \
+            | LAST_MODIFIED: %"SCNu64" \
+            | CPU_USAGE: %lf%% \
+            | MEM_USAGE: %lf%% \
             | RUNNING: %c \
+            | PREVIOUS_RAN: %c \
             | CPU_UP: %"SCNu8" \
             | MEM_UP: %"SCNu8" \
+            | IS_OLD: %c \
             | PATH: %1023s",
             &p_entry->pid,
             t_comm,
             &p_entry->ppid,
             &p_entry->first_seen,
-            &p_entry->first_seen,
             &p_entry->last_access,
+            &p_entry->last_modified,
             &p_entry->cpu_usage,
             &p_entry->mem_usage,
             &p_entry->is_running,
-            &p_entry->cpu_is_increasing,
-            &p_entry->mem_is_increasing,
+            &p_entry->previous_ran,
+            &p_entry->cpu_up,
+            &p_entry->mem_up,
+            &p_entry->is_old,
             t_path
         );
 
@@ -120,26 +125,30 @@ void save_state(struct proc_info *p_info){
             "PID: %d \
             | NAME: %255s \
             | PPID: %d \
-            | TOTAL_AGE: %"SCNu64" \
             | FIRST_SEEN: %"SCNu64" \
             | LAST_ACCESS: %"SCNu64" \
-            | AVG_CPU: %lf%% \
-            | AVG_MEM: %lf%% \
+            | LAST_MODIFIED: %"SCNu64" \
+            | CPU_USAGE: %lf%% \
+            | MEM_USAGE: %lf%% \
             | RUNNING: %c \
+            | PREVIOUS_RAN: %c \
             | CPU_UP: %"SCNu8" \
             | MEM_UP: %"SCNu8" \
+            | IS_OLD: %c \
             | PATH: %1023s",
             p_entry->pid,
             p_entry->comm,
             p_entry->ppid,
             p_entry->first_seen,
-            p_entry->first_seen,
             p_entry->last_access,
+            p_entry->last_modified,
             p_entry->cpu_usage,
             p_entry->mem_usage,
             p_entry->is_running,
-            p_entry->cpu_is_increasing,
-            p_entry->mem_is_increasing,
+            p_entry->previous_ran,
+            p_entry->cpu_up,
+            p_entry->mem_up,
+            p_entry->is_old,
             p_entry->exe_path
             );
         proc_count--;
@@ -155,10 +164,10 @@ void handle_sigint(int sig){
     }
 }
 
-char *get_symlink_path(pid_t pid){
+char *get_symlink_path(char pid){
 
     char path[64];
-    snprintf(path, sizeof(path),"/proc/%d/exe", pid);
+    snprintf(path, sizeof(path),"/proc/%c/exe", pid);
     char *link = malloc(PATH_MAX);
 
     if(link == NULL){
@@ -181,65 +190,141 @@ char *get_symlink_path(pid_t pid){
 //////////////////////make sure to free the link after its been used
 
 // update to include other values?
-void update_stats(struct proc_info *p_info, char *p_pid){
+void update_stats(struct proc_info *p_info, char *p_stats, char *exe, struct stat file_stats){
 
     typedef enum {
         PID = 1,
         COMM = 2,
         STATE = 3,
         PPID = 4,
+        CPU_U = 14,
+        CPU_S = 15,
+        START = 22
     } stat_locations;
-    for(size_t i = 0; i < p_info->proc_count; i++){
 
-    }
+    int left_index = 0;
+    int right_index = 1;
+    int total_len = strlen(p_stats);
+    int var_index = 0;
+    int process_index = 0;
+    int cpu_u = 0;
+    int cpu_s = 0;
+    int start_time = 0;
 
-    // set values of p_info based on enum positions
-}
+    while(process_index <= p_info->proc_count){
+        while(right_index <= total_len){
+            if(*(p_stats + right_index) == ' '){
 
-// if st_atime is more than 30 days then it can be
-// flagged with another field in the proc_info
+                int sub_length = right_index - left_index;
+                int source = *(p_stats + left_index);
 
-// get avg cpu and mem usage also so that
-// a flag could be made where if the cpu or mem
-// usage has increase by say 10 percent then another field
-// gets added
+                switch (var_index) {
+                    case PID:
+                        memcpy(&p_info->data[process_index].pid, &source, sub_length);
+                        break;
+                    case COMM:
+                        memcpy(&p_info->data[process_index].comm, &source, sub_length);
+                        break;
+                    case STATE:
+                        memcpy(&p_info->data[process_index].state, &source, sub_length);
+                        break;
+                    case PPID:
+                        memcpy(&p_info->data[process_index].ppid, &source, sub_length);
+                        break;
+                    case START:
+                        memcpy(&p_info->data[process_index].start, &source, sub_length);
+                        break;
+                    case CPU_U:
+                        memcpy(&cpu_u, &source, sub_length);
+                        break;
+                    case CPU_S:
+                        memcpy(&cpu_s, &source, sub_length);
+                        break;
+                }
 
-// first_seen = if new process then that is the time..
-// else its the first calculated first_seen
+                if(cpu_u != 0 && cpu_s != 0){
 
-// total_time = utime + stime
-// seconds = uptime - (starttime / Hertz)
-// cpu_usage = 100 * ((total_time / Hertz) / seconds)
+                    FILE *fp = fopen(p_stats, "r");
+                    fp = fopen("/proc/uptime", "r");
 
+                    double uptime = 0;
 
+                    if (!fp) {
+                        perror("[DEBUG] Failed to open /proc/uptime");
+                    }
 
+                    fscanf(fp, "%lf", &uptime);
+                    fclose(fp);
 
-////// when a new pid number exists then just add it
-/// index + 1 space in data struct
-///
-/// also if a pid is updated if it was prevously
-/// stoped and started again add another field
+                    long hertz = sysconf(_SC_CLK_TCK);
+                    double total_time = (cpu_u + cpu_s) / (double)hertz;
+                    double seconds = uptime - (start_time / (double)hertz);
+                    double cpu_usage = 100.0 * (total_time / seconds);
 
+                    memcpy(&p_info->data[process_index].cpu_usage, &source, sub_length);
 
-void update_exe(struct proc_info *p_info, char* exe){
-    struct stat file_stats;
-    if(stat(exe, &file_stats) == 0){
-        for(size_t i = 0; i < p_info->proc_count; i++){
+                    cpu_u = 0;
+                    cpu_s = 0;
+                }
 
-            u_int64_t last_access = p_info->data[i].last_access;
-            u_int64_t last_modified = p_info->data[i].last_modified;
-
-            if(last_access == 0){
-                last_access = file_stats.st_atim.tv_sec;
+                var_index++;
+                left_index = right_index;
             }
-            else if(last_modified == 0){
-                last_modified = file_stats.st_mtim.tv_sec;
+            else{
+                right_index++;
             }
-
-            if(last_access >= DEFAULT_OLD){
-                p_info->data->is_old = 1;
-            }
+            right_index++;
         }
+
+        u_int64_t *current_last_access = &p_info->data[process_index].last_access;
+        u_int64_t *current_last_modified = &p_info->data[process_index].last_modified;
+
+        if(*current_last_access == 0 && *current_last_modified == 0){
+            *current_last_access = file_stats.st_atim.tv_sec;
+            *current_last_modified = file_stats.st_atim.tv_sec;
+        }
+        else {
+            p_info->data[process_index + 1].last_access = file_stats.st_atim.tv_sec;
+            p_info->data[process_index + 1].last_access = file_stats.st_atim.tv_sec;
+
+            // first_seen if it hasn't been seen before
+            // on first load_state if the data hasn' been seen before in the
+            // load then set this to 1
+
+            p_info->proc_count++;
+        }
+
+        // if its old
+        if(*current_last_access >= DEFAULT_OLD){
+            p_info->data[process_index].is_old = 1;
+        }
+
+        // if its previously been accessed
+        if(*current_last_access != 0){
+            p_info->data[process_index].is_old = 1;
+        }
+
+        // sets exe path
+        if(p_info->data[process_index].exe_path == 0){
+            p_info->data[process_index].exe_path = exe;
+        }
+
+        // if cpu/mem usage is a lot more than last time like 10 percent more
+        if(p_info->data[process_index].cpu_usage){
+            // malloc a 10 proc_data_t size and add elements to
+            // it then take the average and compare here
+            // if its 10 percent greater or more then set
+            // cpu_up to 1
+            //
+            // same for memory usage where it can also be used here
+            //
+            //
+        }
+
+
+        // go through all fields to make sure they are included
+
+        process_index++;
     }
 }
 
@@ -256,24 +341,20 @@ void scan_procs(struct proc_info *p_info){
     while ((p_entry = readdir(p_dir)) != NULL) {
         if(isdigit(p_entry->d_name[0])){
 
-            // create grouping of pid values
-            // where they can be passed around
-            // to different functions and this will be
-            // dynamically updated here
             char pid = p_entry->d_name[0];
             char path[PATH_MAX];
-            char stat[256];
+            char stats[256];
 
             snprintf(path, sizeof(path), "/proc/%s/stat", p_entry->d_name);
 
-            char *exe = get_symlink_path((pid_t)pid);
-            update_exe(p_info, exe);
-
+            char *exe = get_symlink_path(pid);
             FILE *p_file = fopen(path, "r");
+            struct stat file_stats;
+
             if(p_file){
-                if(fgets(stat, sizeof(stat) , p_file)){
-                    stat[strcspn(stat, "\n")] = 0;
-                    update_stats(p_info, stat);
+                if(fgets(stats, sizeof(stat) , p_file) && stat(exe, &file_stats) == 0){
+                    stats[strcspn(stats, "\n")] = 0;
+                    update_stats(p_info, stats, exe, file_stats);
                 }
                 fclose(p_file);
             }
@@ -293,7 +374,7 @@ struct proc_info* create_info(){
 
     p_info->capacity = DEFAULT_MAX;
 
-    p_info->data = malloc(sizeof(struct proc_info) * p_info->capacity);
+    p_info->data = malloc(sizeof(proc_data_t) * p_info->capacity);
 
     return p_info;
 }
@@ -301,14 +382,14 @@ struct proc_info* create_info(){
 int main(void){
     struct proc_info *p_info = create_info();
     g_info = p_info;
-    signal(SIGINT, handle_sigint);
+    signal(SIGINT, handle_sigint); // learn how this works
     load_state(p_info);
 
     time_t start_time = time(NULL);
     time_t current_time;
     double diff_time;
 
-    while (1) {
+    while(1) {
         scan_procs(p_info);
         current_time = time(NULL);
         diff_time = difftime(current_time, start_time);
