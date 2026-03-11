@@ -11,22 +11,21 @@
 #define DEFAULT_OLD 2592000     // how many days in seconds until a process is old(30 days)
 
 typedef struct {
-    u_int64_t first_seen;
-    u_int64_t last_access;      // found in stat(exe) DONE
-    u_int64_t last_modified;    // found in stat(exe) DONE
-    double cpu_usage;           // stat loc (14, 15)/
+    u_int64_t last_access;
+    u_int64_t last_modified;
+    double first_seen;          // first seen time thats persistant
+    double cpu_usage;
     double mem_usage;           // /proc/pid/smaps_rollup Pss
-    double start;
-    int pid;                    // stat location 2
-    int ppid;                 // stat location 4
-    u_int8_t cpu_up;            // cpu_usage math
-    u_int8_t mem_up;            // mem_usage math
-    char state;                 // stat location 3
-        /// switch to u_int8_t ???
-    char is_old;                // DONE
-    char previous_ran;          // DONE
-    char *exe_path;             // ???
-    char *comm;                 // stat location 1
+    double start_time;
+    pid_t pid;
+    pid_t ppid;
+    u_int8_t cpu_up;
+    u_int8_t mem_up;
+    u_int8_t is_old;
+    u_int8_t previous_ran;
+    u_int8_t state;
+    const char *exe_path;
+    const char *comm;
 } proc_data_t;
 
 struct proc_info {
