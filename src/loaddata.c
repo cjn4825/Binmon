@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "../include/proctypes.h"
-extern void update_capacity(struct proc_info *p_info, size_t load_size);
 
 /*
 *   detials about this file...

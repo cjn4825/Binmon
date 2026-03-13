@@ -24,7 +24,7 @@ typedef struct {
     u_int8_t is_old;
     u_int8_t previous_ran;
     u_int8_t state;
-    const char *exe_path;
+    const char *exe_path;       // when should i be using const char? put in notes
     const char *comm;
 } proc_data_t;
 
@@ -33,5 +33,10 @@ struct proc_info {
     size_t proc_count;
     size_t capacity;
 };
+
+void update_capacity(struct proc_info *p_info, size_t load_size);
+void save_state(struct proc_info *p_info);
+void scan_procs(struct proc_info *p_info);
+void load_state(struct proc_info *p_info);
 
 #endif // STRUCT_DEF

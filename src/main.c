@@ -4,25 +4,19 @@
 #include <signal.h>
 
 #include "../include/proctypes.h"
-extern void save_state(struct proc_info *p_info);
-extern void scan_procs(struct proc_info *p_info);
-extern void load_state(struct proc_info *p_info);
 
 struct proc_info* global_struct_ptr = NULL;
 volatile sig_atomic_t exit_flag = 0;
 
 static void handle_sigint(int sig){
     if (global_struct_ptr != NULL) {
-        save_state((struct proc_info*)global_struct_ptr);
-        // printf("\n[DEBUG] Shutting down...\n");
-        // free(global_struct_ptr->data);
-        // free(global_struct_ptr);
+        save_state(global_struct_ptr); // how does this point to the original one? put in notes
         global_struct_ptr = NULL;
         exit(0);
     }
 }
 
-struct proc_info* create_info(){
+static struct proc_info* create_info(){
 
     struct proc_info *p_info = malloc(sizeof(struct proc_info));
 

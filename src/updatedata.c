@@ -35,30 +35,8 @@ void update_capacity(struct proc_info *p_info, size_t load_size){
     }
 }
 
-const char *get_symlink_path(char pid){
 
-    char path[64];
-    snprintf(path, sizeof(path),"/proc/%c/exe", pid);
-    char *link = malloc(PATH_MAX);
-
-    if(link == NULL){
-        return NULL;
-    }
-
-    size_t link_length = readlink(path, link, PATH_MAX - 1);
-
-    if(link_length == -1){
-        free(link);
-        perror("[DEBUG] Could not find link");
-        return NULL;
-    }
-
-    link[link_length] = '\0';
-
-    return link;
-}
-
-pid_t find_pid_index(struct proc_info *p_info, pid_t pid){
+static pid_t find_pid_index(struct proc_info *p_info, pid_t pid){
     for(size_t i = 0; i < p_info->proc_count; i++){
         if(p_info->data[i].pid == pid){
             return pid;
@@ -71,7 +49,7 @@ pid_t find_pid_index(struct proc_info *p_info, pid_t pid){
     return pid;
 }
 
-void update_stats(
+static void update_stats(
     struct proc_info *p_info,
     const char *p_stats,
     const char *exe,
@@ -200,6 +178,29 @@ void update_stats(
         //
         //
     }
+}
+
+static const char *get_symlink_path(char pid){
+
+    char path[64];
+    snprintf(path, sizeof(path),"/proc/%c/exe", pid);
+    char *link = malloc(PATH_MAX);
+
+    if(link == NULL){
+        return NULL;
+    }
+
+    size_t link_length = readlink(path, link, PATH_MAX - 1);
+
+    if(link_length == -1){
+        free(link);
+        perror("[DEBUG] Could not find link");
+        return NULL;
+    }
+
+    link[link_length] = '\0';
+
+    return link;
 }
 
 void scan_procs(struct proc_info *p_info){
