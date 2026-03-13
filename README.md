@@ -6,3 +6,7 @@ Still very much a work in progress, and I guarantee this does not work at all, b
 
 # Goals
 As I said in the long description at the top, I want a way to eliminate the "I installed a tool a couple of months ago for testing and forgot to remove it, so it's taking a super small percentage of storage and resources" issue I have.
+
+* Eventually switch to using using linux sockets to transfer the data in a binary format to a centralized server across a network. The server would then have a dashboard to monitor many different systems running this in the background.
+
+* Definitely more, but I get to it later...
