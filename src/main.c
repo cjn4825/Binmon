@@ -29,6 +29,9 @@ static struct proc_info* create_info(){
 
     p_info->data = malloc(sizeof(proc_data_t) * p_info->capacity);
 
+    p_info->data->cpu_table = malloc(sizeof(proc_cpu_usage_t));
+    p_info->data->mem_table = malloc(sizeof(proc_mem_usage_t));
+
     return p_info;
 }
 
