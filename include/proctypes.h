@@ -10,10 +10,16 @@
 #define DEFAULT_MAX 64          // default max until reallocating is needed
 #define DEFAULT_OLD 2592000     // how many days in seconds until a process is old(30 days)
 
+
+// packet structure for
+// sending over the
+// internet
+struct packet {
+    //
+} __attribute__((packed));
+
 // to save space i could just factor
 // in the whole number values
-// but for now ill just insert
-// the double ones
 typedef struct {
     double cpu_usage_1;
     double cpu_usage_2;
@@ -44,7 +50,7 @@ typedef struct {
     u_int8_t is_old;
     u_int8_t previous_ran;
     u_int8_t state;
-    char *exe_path;       // when should i be using const char? put in notes
+    char *exe_path;             // when should i be using const char? put in notes
     proc_cpu_usage_t *cpu_table;
     proc_mem_usage_t *mem_table;
     const char *comm;
