@@ -17,20 +17,15 @@
 
 void update_capacity(struct proc_info *p_info){
     if(p_info->proc_count >= DEFAULT_MAX){
+
         int new_size = 128;
+
         while(new_size <= p_info->proc_count){
             new_size *= 2;
         }
 
-        proc_data_t *p_resize_data = realloc(p_info->data, new_size);
-
-        if(p_resize_data){
-            p_info->data = p_resize_data;
-            p_info->capacity = new_size;
-        }
-        else{
-            perror("ERROR: realloc failed");
-        }
+        p_info->data = realloc(p_info->data, new_size);
+        p_info->capacity = new_size;
     }
 }
 
@@ -42,19 +37,19 @@ static void update_stats(
     size_t proc_index
 ){
 
-    typedef enum {
-        PID = 1,
-        COMM = 2,
-        STATE = 3,
-        PPID = 4,
-        CPU_U = 14,
-        CPU_S = 15,
-        START = 22
-    } stat_locations;
+    // typedef enum {
+    //     PID = 1,
+    //     COMM = 2,
+    //     STATE = 3,
+    //     PPID = 4,
+    //     CPU_U = 14,
+    //     CPU_S = 15,
+    //     START = 22
+    // } stat_locations;
 
     double uptime = 0;
-    int left_index = 0;
-    int right_index = 1;
+    // int left_index = 0;
+    // int right_index = 1;
     int total_len = strlen(p_stats);
     int cpu_u = 0;
     int cpu_s = 0;
@@ -63,97 +58,91 @@ static void update_stats(
     proc_data_t *data = &p_info->data[proc_index];
 
     // loops through /proc/.../stat to update info
-    while(right_index <= total_len - 1){
+    //
+    //
+    // refactor to use sscanf or whatever its called
+    // don't need to loop through just update the value perline
+    // and use dummy values to get values?
+    //
+    // int sub_length = right_index - left_index;
+    // char *source_location = &p_stats[left_index];
 
-        char *right_location = &p_stats[right_index];
+    // if its not seen before don't need to realloc?
+    // no becaues the size is preallocated to 64
 
-        if(*right_location == ' '){
+    if(proc_index == p_info->proc_count){
+        // switch (left_index) {
+        //     case PID: == 1
+        //         memcpy(&data->pid, source_location, sub_length);
+        //         break;
+        //     case COMM: == 2
+        //         memcpy(&data->comm, source_location, sub_length);
+        //         break;
+        //     case PPID: == 4
+        //         memcpy(&data->ppid, source_location, sub_length);
+        //         break;
+        //     case START: == 22
+        //         memcpy(&data->start_time, source_location, sub_length);
+        //         break;
+        // }
+        int num_entry = sscanf();
+    }
 
-            int sub_length = right_index - left_index;
-            char *source_location = &p_stats[left_index];
+    // values that need to be updated no matter what
+    switch (left_index) {
+        case STATE:
+            memcpy(&data->state, source_location, sub_length);
+            break;
+        case CPU_U:
+            memcpy(&cpu_u, source_location, sub_length);
+            break;
+        case CPU_S:
+            memcpy(&cpu_s, source_location, sub_length);
+            break;
+    }
 
-            // if its not seen before don't need to realloc?
-            // no becaues the size is preallocated to 64
+    // cpu usage calculation
 
-            if(proc_index == p_info->proc_count){
-                switch (left_index) {
-                    case PID:
-                        memcpy(&data->pid, source_location, sub_length);
-                        break;
-                    case COMM:
-                        memcpy(&data->comm, source_location, sub_length);
-                        break;
-                    case PPID:
-                        memcpy(&data->ppid, source_location, sub_length);
-                        break;
-                    case START:
-                        memcpy(&data->start_time, source_location, sub_length);
-                        break;
-                }
+    FILE *p_file = fopen("/proc/uptime", "r");
+
+    if (!p_file) {
+        perror("[DEBUG] Failed to open /proc/uptime");
+        return;
+    }
+
+    // only want to scan the first one
+    if(fscanf(p_file, "%lf", &uptime) != 1){
+        perror("[DEBUG] Failed to scan /proc/uptime");
+        return;
+    }
+
+    long hertz = sysconf(_SC_CLK_TCK);
+    double total_time = (cpu_u + cpu_s) / (double)hertz;
+    double seconds = uptime - (start_time / (double)hertz);
+    double cpu_usage = 100.0 * (total_time / seconds);
+
+    data->cpu_usage = cpu_usage;
+
+    // mem usage calculation
+    char file[32];
+    snprintf(file, sizeof(file),"/proc/%c/smaps_rollup", data->pid);
+
+    p_file = fopen(file, "r");
+
+    // get pss value and set that equal to data->mem_usage everytime
+    while(fgets(file, sizeof(file), p_file)){
+        if(strncmp(file, "Pss:", 4) == 0){
+            int left_digit = 0;
+            while(!isdigit((char)file[left_digit])){
+                left_digit++;
             }
-
-            // values that need to be updated no matter what
-            switch (left_index) {
-                case STATE:
-                    memcpy(&data->state, source_location, sub_length);
-                    break;
-                case CPU_U:
-                    memcpy(&cpu_u, source_location, sub_length);
-                    break;
-                case CPU_S:
-                    memcpy(&cpu_s, source_location, sub_length);
-                    break;
-            }
-
-            // cpu usage calculation
-
-            FILE *p_file = fopen("/proc/uptime", "r");
-
-            if (!p_file) {
-                perror("[DEBUG] Failed to open /proc/uptime");
-                return;
-            }
-
-            // only want to scan the first one
-            if(fscanf(p_file, "%lf", &uptime) != 1){
-                perror("[DEBUG] Failed to scan /proc/uptime");
-                return;
-            }
-
-            long hertz = sysconf(_SC_CLK_TCK);
-            double total_time = (cpu_u + cpu_s) / (double)hertz;
-            double seconds = uptime - (start_time / (double)hertz);
-            double cpu_usage = 100.0 * (total_time / seconds);
-
-            data->cpu_usage = cpu_usage;
-
-            // mem usage calculation
-            char file[32];
-            snprintf(file, sizeof(file),"/proc/%c/smaps_rollup", data->pid);
-
-            p_file = fopen(file, "r");
-
-            // get pss value and set that equal to data->mem_usage everytime
-            while(fgets(file, sizeof(file), p_file)){
-                if(strncmp(file, "Pss:", 4) == 0){
-                    int left_digit = 0;
-                    while(!isdigit((char)file[left_digit])){
-                        left_digit++;
-                    }
-                    // assume the value will be 4 digits for now
-                    memcpy(&data->mem_usage, &file[left_digit], 4);
-                }
-            }
-
-            fclose(p_file);
-
-            left_index = right_index + 1;
-            right_index = left_index + 1;
-        }
-        else{
-            right_index++;
+            // assume the value will be 4 digits for now
+            memcpy(&data->mem_usage, &file[left_digit], 4);
         }
     }
+
+    fclose(p_file);
+}
 
     // values updated list:
     // pid
@@ -283,8 +272,11 @@ void scan_procs(struct proc_info *p_info){
                 return;
             }
 
-            if(fgets(stats, sizeof(stat) , p_file) && stat(p_exe, &file_stats) == 0){
+            if(fgets(stats, sizeof(stats) , p_file) && stat(p_exe, &file_stats) == 0){
+                // change this so its more legible..also explain why
                 stats[strcspn(stats, "\n")] = 0;
+                // don't pass in copy of stats just do pointer to it and malloc it
+                // then delete it after each return right after update_stats...
                 update_stats(p_info, stats, p_exe, file_stats, index);
             }
 
