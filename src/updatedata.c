@@ -73,7 +73,7 @@ static void update_stats(
             int sub_length = right_index - left_index;
             char *source_location = &p_stats[left_index];
 
-            if(data->flags_table->not_missing == 0){
+            if(data->flags_table.not_missing == 0){
 
                 switch (stat_value_place) {
                     case PID:
@@ -101,7 +101,7 @@ static void update_stats(
                 //
                 // also put values that need to be set once here as well
                 data->exe_path = exe;
-                data->flags_table->not_missing = 1;
+                data->flags_table.not_missing = 1;
             }
 
             // values that need to be updated no matter what
@@ -110,7 +110,7 @@ static void update_stats(
                     // can't copy directly do to how the compiler
                     // works with bitfields
                     memcpy(&temp_state, source_location, sub_length);
-                    data->flags_table->state = temp_state;
+                    data->flags_table.state = temp_state;
                     break;
                 case CPU_U:
                     memcpy(&cpu_u, source_location, sub_length);
@@ -206,7 +206,7 @@ static void update_stats(
 
             //only set if its not old yet
             if(data->last_access >= DEFAULT_OLD){
-                data->flags_table->is_old = 1;
+                data->flags_table.is_old = 1;
             }
 
             // have the tables malloced inside of first

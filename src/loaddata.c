@@ -5,7 +5,17 @@
 #include "../include/proctypes.h"
 
 /*
-*   detials about this file...
+*   THIS FILE IS ALL WRONG
+*
+*   since im switching to sending data over the networking
+*   since this is the monitoring agent it will probably not
+*   load any data since it just needs to gather it and send it
+*   off...if it needs to restart then the same data will probably
+*   be sent back to this from the client in a saving thing
+*
+*
+*   I think the agent will be shutdown based on a external message
+*   from a central server?
 *
 *
 */
