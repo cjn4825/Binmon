@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <linux/limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,32 @@
 *
 *
 */
+
+void pack_data(struct proc_info *p_info, uint8_t *network_buffer){
+    int offset = 0;
+    tlv_t t; // this acts like a template that has a fixed size and holds fields for each
+    // t.type = TYPE_PID;
+    t.value.pid = p_info->data->pid;
+    memcpy(network_buffer + offset, &t, sizeof(tlv_t));
+    offset += sizeof(tlv_t);
+
+    // t acts as the buffer here
+
+    // continue for other types
+    //
+    // make sure to fix for bitfield addition
+    //
+    // this then results in a long network_buffer that
+    // will then be put into a packet and sent off
+    // the host to a destination
+    //
+    //
+    // MAKE SURE:
+    // actually pack ALL processes into
+    // one large buffer and then that packet
+    // gets sent off probably every 5 seconds just for
+    // a lower network overhead
+}
 
 void update_capacity(struct proc_info *p_info){
     if(p_info->proc_count >= DEFAULT_MAX){
@@ -34,7 +61,7 @@ static void update_stats(
     char *p_stats,
     char *exe,
     struct stat file_stats,
-    size_t proc_index
+    int proc_index
 ){
 
     typedef enum {
@@ -54,6 +81,9 @@ static void update_stats(
     int cpu_u = 0;
     int cpu_s = 0;
     int start_time = 0;
+
+    // temp variables for bitfield values
+    uint8_t temp_state = 0;
 
     proc_data_t *data = &p_info->data[proc_index];
 
@@ -85,7 +115,10 @@ static void update_stats(
             // values that need to be updated no matter what
             switch (left_index) {
                 case STATE:
-                    memcpy(&data->state, source_location, sub_length);
+                    // can't copy directly do to how the compiler
+                    // works with bitfields
+                    memcpy(&temp_state, source_location, sub_length);
+                    data->flags_table->state = temp_state;
                     break;
                 case CPU_U:
                     memcpy(&cpu_u, source_location, sub_length);
@@ -163,7 +196,7 @@ static void update_stats(
                 *current_last_access = file_stats.st_atim.tv_sec;
             }
             else {
-                data->previous_ran = 1;
+                data->flags_table->previous_ran = 1;
             }
 
             if(*current_last_modified == 0){
@@ -172,7 +205,7 @@ static void update_stats(
 
             //only set if its not old yet
             if(*current_last_access >= DEFAULT_OLD){
-                data->is_old = 1;
+                data->flags_table->is_old = 1;
             }
 
             // sets exe path
@@ -197,7 +230,7 @@ static void update_stats(
 // index is the location in the main struct that the info should be updated
 // if not there then it should be at the very end?
 static int find_pid_index(struct proc_info *p_info, pid_t pid){
-    for(size_t i = 0; i < p_info->proc_count; i++){
+    for(int i = 0; i < p_info->proc_count; i++){
         if(p_info->data[i].pid == pid){
             return i;
         }
@@ -224,7 +257,7 @@ static char *get_symlink_path(char pid){
         return NULL;
     }
 
-    size_t link_length = readlink(path, link, PATH_MAX - 1);
+    int link_length = readlink(path, link, PATH_MAX - 1);
 
     if(link_length == -1){
         free(link);

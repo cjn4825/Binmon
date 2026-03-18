@@ -1,5 +1,8 @@
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <signal.h>
 
@@ -7,6 +10,28 @@
 
 struct proc_info* global_struct_ptr = NULL;
 volatile sig_atomic_t exit_flag = 0;
+
+// move this loggin logic to a headerfile?/.c file
+// like a utils.c for just this function below
+// and header for the macro
+int g_logging = 0;
+
+void get_time(char *buffer, size_t length){
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(buffer, length, "%H:%M:%S", t);
+}
+
+#define LOG(message, ...) \
+    do { \
+        if(g_logging) { \
+            char time_buffer[10]; \
+            get_time(time_buffer, sizeof(time_buffer)); \
+            fprintf(stderr, "[%s][DEBUG] %s:%d | ", time_buffer, __FILE__, __LINE__); \
+            fprintf(stderr, (message), ##__VA_ARGS__); \
+            fprintf(stderr, "\n"); \
+        } \
+    }  while(0)
 
 static void handle_sigint(int sig){
     if (global_struct_ptr != NULL) {
@@ -32,10 +57,21 @@ static struct proc_info* create_info(){
     p_info->data->cpu_table = malloc(sizeof(proc_cpu_usage_t));
     p_info->data->mem_table = malloc(sizeof(proc_mem_usage_t));
 
+    // adjust for additional information added in headerfile
+
+
     return p_info;
 }
 
-int main(void){
+int main(int argc, char *argv[]){
+
+    // implement loggin more with a global macro?
+    if(argc > 1 && strcmp(argv[1], "-v") == 0){
+        g_logging = 1;
+    }
+
+    LOG("Agent starting in verbose debug mode...");
+
     struct proc_info *p_info = create_info();
     global_struct_ptr = p_info;
     signal(SIGINT, handle_sigint);

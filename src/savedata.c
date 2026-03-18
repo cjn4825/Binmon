@@ -1,5 +1,6 @@
 #include "../include/proctypes.h"
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 
 /*
@@ -7,6 +8,12 @@
 *
 *
 */
+
+
+// unsigned char* pack_data(unsigned char *buffer, uint8_t type, void *value, u_int64_t length){
+//     *buffer++ = type;
+// }
+
 
 void save_state(struct proc_info *p_info){
     const char save_file[] = "registryinfo/registry.txt";
