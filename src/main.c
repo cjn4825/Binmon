@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 #include <signal.h>
 
@@ -16,17 +15,11 @@ volatile sig_atomic_t exit_flag = 0;
 // and header for the macro
 int g_logging = 0;
 
-void get_time(char *buffer, size_t length){
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    strftime(buffer, length, "%H:%M:%S", t);
-}
-
 #define LOG(message, ...) \
     do { \
         if(g_logging) { \
             char time_buffer[10]; \
-            get_time(time_buffer, sizeof(time_buffer)); \
+            get_log_time(time_buffer, sizeof(time_buffer)); \
             fprintf(stderr, "[%s][DEBUG] %s:%d | ", time_buffer, __FILE__, __LINE__); \
             fprintf(stderr, (message), ##__VA_ARGS__); \
             fprintf(stderr, "\n"); \
@@ -59,7 +52,8 @@ static struct proc_info* create_info(){
 
     // adjust for additional information added in headerfile
 
-
+    // union needs to be malloced since another file will use it
+    // tlv does not since it acts as a template
     return p_info;
 }
 

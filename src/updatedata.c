@@ -1,7 +1,5 @@
 #include <ctype.h>
 #include <dirent.h>
-#include <linux/limits.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,32 +13,6 @@
 *
 *
 */
-
-void pack_data(struct proc_info *p_info, uint8_t *network_buffer){
-    int offset = 0;
-    tlv_t t; // this acts like a template that has a fixed size and holds fields for each
-    // t.type = TYPE_PID;
-    t.value.pid = p_info->data->pid;
-    memcpy(network_buffer + offset, &t, sizeof(tlv_t));
-    offset += sizeof(tlv_t);
-
-    // t acts as the buffer here
-
-    // continue for other types
-    //
-    // make sure to fix for bitfield addition
-    //
-    // this then results in a long network_buffer that
-    // will then be put into a packet and sent off
-    // the host to a destination
-    //
-    //
-    // MAKE SURE:
-    // actually pack ALL processes into
-    // one large buffer and then that packet
-    // gets sent off probably every 5 seconds just for
-    // a lower network overhead
-}
 
 void update_capacity(struct proc_info *p_info){
     if(p_info->proc_count >= DEFAULT_MAX){
@@ -81,8 +53,14 @@ static void update_stats(
     int cpu_u = 0;
     int cpu_s = 0;
     int start_time = 0;
+    int stat_value_place = 1;
 
-    // temp variables for bitfield values
+    // int mem_index = 0;
+    // int cpu_index = 0;
+    // float avg_mem = 0;
+    // float avg_cpu = 0;
+
+    // temp variable for bitfield value
     uint8_t temp_state = 0;
 
     proc_data_t *data = &p_info->data[proc_index];
@@ -95,8 +73,9 @@ static void update_stats(
             int sub_length = right_index - left_index;
             char *source_location = &p_stats[left_index];
 
-            if(proc_index == p_info->proc_count){
-                switch (left_index) {
+            if(data->flags_table->not_missing == 0){
+
+                switch (stat_value_place) {
                     case PID:
                         memcpy(&data->pid, source_location, sub_length);
                         break;
@@ -107,13 +86,26 @@ static void update_stats(
                         memcpy(&data->ppid, source_location, sub_length);
                         break;
                     case START:
-                        memcpy(&data->start_time, source_location, sub_length);
+                        memcpy(&data->first_seen, source_location, sub_length);
                         break;
                 }
+
+                // create mem table of 5 elements
+                // free it at the end of the whileloop
+
+                // don't need to right now?
+
+                // once all fields are matched above then its marked as
+                // not missing
+                //
+                //
+                // also put values that need to be set once here as well
+                data->exe_path = exe;
+                data->flags_table->not_missing = 1;
             }
 
             // values that need to be updated no matter what
-            switch (left_index) {
+            switch (stat_value_place) {
                 case STATE:
                     // can't copy directly do to how the compiler
                     // works with bitfields
@@ -125,6 +117,14 @@ static void update_stats(
                     break;
                 case CPU_S:
                     memcpy(&cpu_s, source_location, sub_length);
+                    break;
+                case START:
+
+
+                    // makes this so it changes only if its different
+                    //
+                    //
+                    memcpy(&data->start_time, source_location, sub_length);
                     break;
             }
 
@@ -159,12 +159,22 @@ static void update_stats(
             // get pss value and set that equal to data->mem_usage everytime
             while(fgets(file, sizeof(file), p_file)){
                 if(strncmp(file, "Pss:", 4) == 0){
+
+                    // counts number of digits until pss
+                    // value is reached
                     int left_digit = 0;
-                    while(!isdigit((char)file[left_digit])){
+                    while(!isdigit(file[left_digit])){
                         left_digit++;
                     }
-                    // assume the value will be 4 digits for now
-                    memcpy(&data->mem_usage, &file[left_digit], 4);
+
+                    int right_digit = left_digit;
+                    while(isdigit(file[right_index])){
+                        right_digit++;
+                    }
+
+                    int total_length = right_digit - left_digit;
+
+                    memcpy(&data->mem_usage, &file[left_digit], total_length);
                 }
             }
 
@@ -182,49 +192,37 @@ static void update_stats(
             // exe_path
             // cpu_usage
             // mem_usage
-            // previous_ran
-            //      left to update:
             // first_seen
+            //      left to update:
+            //      will do later once I figure out the
+            //      structure of how the data will be used
             // cpu_up
             // mem_up
 
             // reading from file_stats from executible section
-            u_int64_t *current_last_access = &data->last_access;
-            u_int64_t *current_last_modified = &data->last_modified;
-
-            if(*current_last_access == 0){
-                *current_last_access = file_stats.st_atim.tv_sec;
-            }
-            else {
-                data->flags_table->previous_ran = 1;
-            }
-
-            if(*current_last_modified == 0){
-                *current_last_modified = file_stats.st_atim.tv_sec;
-            }
+            // needs to be updated each time
+            data->last_access = file_stats.st_atim.tv_sec;
+            data->last_modified = file_stats.st_mtim.tv_sec;
 
             //only set if its not old yet
-            if(*current_last_access >= DEFAULT_OLD){
+            if(data->last_access >= DEFAULT_OLD){
                 data->flags_table->is_old = 1;
             }
 
-            // sets exe path
-            if(data->exe_path == 0){
-                data->exe_path = exe;
-            }
+            // have the tables malloced inside of first
+            // switch case...have global varible that acts
+            // as the index
+            // for each loop of a normal tick the value at that
+            // index is changed and the variable is updated
+            // if the index is at the end then reset to zero
 
-            // data->mem_table->mem_usage_1 =
-            // if cpu/mem usage is a lot more than last time like 10 percent more
-            // if(){
-                // it then take the average and compare here
-                // if its 10 percent greater or more then set
-                // cpu_up to 1
-                //
-                // same for memory usage where it can also be used here
-                //
-                //
-            // }
+            // also have varible that is the average of all 5 entries
+            // if the new value being written is 10 percent
+            // greater than the average then the mem_up flag is set
         }
+        stat_value_place++;
+        left_index = right_index + 1;
+        right_index = left_index + 1;
     }
 }
 // index is the location in the main struct that the info should be updated
@@ -240,11 +238,9 @@ static int find_pid_index(struct proc_info *p_info, pid_t pid){
         update_capacity(p_info);
     }
 
-    // if no match then its new data
-    // so the total needs to increase
-    // by one then set the index to that
-    p_info->data++;
-    return p_info->proc_count;
+    u_int32_t proc_next_index = p_info->proc_count;
+    p_info->proc_count++;
+    return proc_next_index;
 }
 
 static char *get_symlink_path(char pid){
@@ -287,7 +283,7 @@ void scan_procs(struct proc_info *p_info){
             pid_t pid = atoi(p_entry->d_name);
             int index = find_pid_index(p_info, pid);
             char path[PATH_MAX];
-            char *stats = malloc(256); // replace with no magic number
+            char *stats = malloc(256); // replace no magic number(256)
 
             snprintf(path, sizeof(path), "/proc/%s/stat", p_entry->d_name);
 
@@ -300,9 +296,7 @@ void scan_procs(struct proc_info *p_info){
             }
 
             if(fgets(stats, sizeof(stats) , p_file) && stat(p_exe, &file_stats) == 0){
-                // set last byte of char array to not have \n
-                // this is reading from text to it has one? or is that jut the
-                // product of fgets
+                // sets last byte of char array to not have \n
                 int length_till_null = strcspn(stats, "\n");
                 stats[length_till_null] = 0;
 
