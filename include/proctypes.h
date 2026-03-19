@@ -11,7 +11,7 @@
 #define DELTA_PROGRAM 100000        // How many times the program refreshes
 #define RESIZE_PERCENTAGE .90       // What percent full until resizing
 #define DELTA_SCAN 0.5              // How many seconds a scan happens
-#define DEFAULT_MAX 64              // default max until reallocating is needed
+#define DEFAULT_MAX 1024            // default max until reallocating is needed
 #define DEFAULT_OLD 2592000         // how many days in seconds until a process is old(30 days)
 
 struct packet_header {

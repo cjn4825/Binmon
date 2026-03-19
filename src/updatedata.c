@@ -384,14 +384,34 @@ void scan_procs(struct proc_info *p_info){
         }
 
         char bin[] = "/bin";
+        char sbin[] = "/sbin";
         char usr_bin[] = "/usr/bin";
+        char usr_local_bin[] = "/usr/local/bin";
         char tmp[] = "/tmp";
-        char home[] = "~/";
+        char tmp_var[] = "/var/tmp";
+        char opt[] = "/opt";
+        char local_bin[] = "~/.local/bin";
+        char downloads[] = "~/Downloads";
+        char shm[] = "/dev/shm";
+        char user_bin[] = "~/bin";
 
+        // also need to check if the directory exists or not
+        //
+        // TODO: where could i find c_time?
+        // since this might introduce a 1000 or so additions make it so the
+        // default max is set to around 1024 elements or so
+        // also make it so this scans only every 30 seconds or so
+        //
         craw_bins(p_info, bin);
+        craw_bins(p_info, sbin);
         craw_bins(p_info, usr_bin);
+        craw_bins(p_info, usr_local_bin);
         craw_bins(p_info, tmp);
-        craw_bins(p_info, home);
+        craw_bins(p_info, tmp_var);
+        craw_bins(p_info, local_bin);
+        craw_bins(p_info, downloads);
+        craw_bins(p_info, shm);
+        craw_bins(p_info, user_bin);
     }
 
     closedir(p_dir);
