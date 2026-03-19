@@ -1,9 +1,11 @@
 #include <ctype.h>
 #include <dirent.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "../include/proctypes.h"
@@ -266,6 +268,83 @@ static char *get_symlink_path(char pid){
     return link;
 }
 
+
+// recursive algorithm to search bins
+void craw_bins(struct proc_info *p_info, const char *bin_path){
+    // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
+    // to find binaries
+
+    // search /bin
+    struct dirent *p_info_bin;
+    DIR *p_bin_dir = opendir(bin_path);
+
+    if(!p_bin_dir) {
+        perror("ERROR: could not read /bin");
+        return;
+    }
+
+    while ((p_info_bin = readdir(p_bin_dir)) != NULL){
+        // skip . and .. dirs
+        if(strcmp(p_info_bin->d_name, ".") == 0 || strcmp(p_info_bin->d_name, "..") == 0){
+            // continue since we just need to go to the next one
+            continue;
+        }
+
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "%s/%s", bin_path, p_info_bin->d_name);
+
+        struct stat bin_stats;
+
+        // lstat because I don't want to follow sym links
+        // ...think i also need to use S_ISLNK?
+        if(!lstat(path, &bin_stats)){
+            continue;
+        }
+
+        if(S_ISDIR(bin_stats.st_mode)){
+            craw_bins(p_info, path);
+        }
+        else if(S_ISREG(bin_stats.st_mode)){
+
+            // put logic here that checks if its already
+            // in main struct
+            for(int i = 0; i < p_info->proc_count; i++){
+
+                char *exe_path = p_info->data[i].exe_path;
+                char *d_name = p_info_bin->d_name;
+
+                // if(p_entry->data[i].exe_path != p_entry_bin->d_name){
+                // actually don't know if both are null terminating
+                // i guess ill check in the future
+                if(!strncmp(exe_path, d_name, sizeof(*d_name))){
+                    // if not equal to each other
+
+                    // add to main struct with pid of 0
+                    // and leave everything else alone but
+                    //
+                    //
+                    // if a bin is turned into a process then i also need to search
+                    // if its a bin and delete that element?
+
+                    // update this to check capacity
+                    // and do something like if check_capacity then continue
+                    update_capacity(p_info);
+                    u_int32_t proc_next_index = p_info->proc_count;
+
+                    // zero as a special indicator that its a binary to the client
+                    p_info->data[proc_next_index].pid = 0;
+                    p_info->data[proc_next_index].exe_path = path;
+                    p_info->data[proc_next_index].last_access = bin_stats.st_atim.tv_sec;
+                    p_info->proc_count++;
+                }
+            }
+
+        }
+    }
+
+    closedir(p_bin_dir);
+}
+
 void scan_procs(struct proc_info *p_info){
     DIR *p_dir = opendir("/proc");
 
@@ -295,17 +374,25 @@ void scan_procs(struct proc_info *p_info){
                 return;
             }
 
+            // check if == 0 is correct
             if(fgets(stats, sizeof(stats) , p_file) && stat(p_exe, &file_stats) == 0){
-                // sets last byte of char array to not have \n
-                int length_till_null = strcspn(stats, "\n");
-                stats[length_till_null] = 0;
-
                 update_stats(p_info, stats, p_exe, file_stats, index);
                 free(stats);
             }
 
             fclose(p_file);
         }
+
+        char bin[] = "/bin";
+        char usr_bin[] = "/usr/bin";
+        char tmp[] = "/tmp";
+        char home[] = "~/";
+
+        craw_bins(p_info, bin);
+        craw_bins(p_info, usr_bin);
+        craw_bins(p_info, tmp);
+        craw_bins(p_info, home);
     }
+
     closedir(p_dir);
 }
