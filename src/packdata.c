@@ -35,7 +35,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = EXE_PATH;
         t.length = sizeof(t.value.string);
         strcpy(t.value.string, p_info->data[i].exe_path);
-        tlv_size = t.tag + t.length + sizeof(p_info->data[i].exe_path);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].exe_path);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -43,7 +43,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = COMM;
         t.length = sizeof(t.value.string);
         strcpy(t.value.string, p_info->data[i].comm);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(p_info->data[i].comm);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].comm);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -51,7 +51,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = LAST_ACCESS;
         t.length = htonl(sizeof(t.value.u32));
         t.value.u32 = htonl(p_info->data[i].last_access);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -59,7 +59,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = LAST_MODIFIED;
         t.length = htonl(sizeof(t.value.u32));
         t.value.u32 = htonl(p_info->data[i].last_modified);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -67,7 +67,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = LAST_STATUS;
         t.length = htonl(sizeof(t.value.u32));
         t.value.u32 = htonl(p_info->data[i].last_status);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -75,7 +75,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = PID;
         t.length = htonl(sizeof(t.value.u32));
         t.value.u32 = htonl(p_info->data[i].pid);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -83,7 +83,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = PPID;
         t.length = htonl(sizeof(t.value.u32));
         t.value.u32 = htonl(p_info->data[i].ppid);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -91,7 +91,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = FIRST_SEEN;
         t.length = htons(sizeof(t.value.u16));
         t.value.u16 = htons(p_info->data[i].first_seen);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -99,7 +99,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = CPU_USAGE;
         t.length = htons(sizeof(t.value.u16));
         t.value.u16 = htons(p_info->data[i].cpu_usage);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -107,7 +107,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = MEM_USAGE;
         t.length = htons(sizeof(t.value.u16));
         t.value.u16 = htons(p_info->data[i].mem_usage);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -115,7 +115,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = START_TIME;
         t.length = htons(sizeof(t.value.u16));
         t.value.u16 = htons(p_info->data[i].start_time);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -123,7 +123,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.tag = FILE_SIZE;
         t.length = htons(sizeof(t.value.u16));
         t.value.u16 = htons(p_info->data[i].file_size);
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
@@ -133,7 +133,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         // include more inside of bitfield
         uint8_t temp_state = p_info->data[i].flags_table.state;
         t.value.u8 = temp_state;
-        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u8);
+        tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u8);
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
