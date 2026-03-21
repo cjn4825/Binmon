@@ -1,0 +1,17 @@
+---
+
+# TODO:
+#
+#   vulgrind ci:
+#     use mem leaking tools like vulgrind in a github actions vm that
+#     checks for memory leaks of any kind? not sure how it would test it
+#     i guess with some test data? like have a mode for testing leaks
+#     with a txt file to point to instead of hard coding /proc depending
+#     on the build type?
+#
+#     also scan for general security issues with semgrep or other security
+#     based sast tooling
+#
+#     eventually cd with having a control node pull changes and compile on host
+#     once compiled use ansible to push changes to multiple endpoints that need
+#     binmon on them

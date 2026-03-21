@@ -1,0 +1,146 @@
+#include "../include/proctypes.h"
+#include <netinet/in.h>
+#include <stdint.h>
+#include <string.h>
+
+// these values lets the client know what data each value
+// in the data stream is
+typedef enum {
+    EXE_PATH,
+    COMM,
+    LAST_ACCESS,
+    LAST_MODIFIED,
+    LAST_STATUS,
+    PID,
+    PPID,
+    FIRST_SEEN,
+    CPU_USAGE,
+    MEM_USAGE,
+    START_TIME,
+    FILE_SIZE,
+    FLAGS
+} data_types;
+
+//TODO; change to use loop instead since this is very wasteful of space
+/*      check if comm and exe have new line character don't want it
+ */
+
+void pack_data(struct proc_info *p_info, char *network_buffer){
+
+    tlv_t t;
+    size_t tlv_size = 0;
+    char *offset = &network_buffer[sizeof(struct packet_header)];
+
+    for(size_t i = 0; i < p_info->proc_count; i++){
+        t.tag = EXE_PATH;
+        t.length = sizeof(t.value.string);
+        strcpy(t.value.string, p_info->data[i].exe_path);
+        tlv_size = t.tag + t.length + sizeof(p_info->data[i].exe_path);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = COMM;
+        t.length = sizeof(t.value.string);
+        strcpy(t.value.string, p_info->data[i].comm);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(p_info->data[i].comm);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = LAST_ACCESS;
+        t.length = htonl(sizeof(t.value.u32));
+        t.value.u32 = htonl(p_info->data[i].last_access);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = LAST_MODIFIED;
+        t.length = htonl(sizeof(t.value.u32));
+        t.value.u32 = htonl(p_info->data[i].last_modified);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = LAST_STATUS;
+        t.length = htonl(sizeof(t.value.u32));
+        t.value.u32 = htonl(p_info->data[i].last_status);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = PID;
+        t.length = htonl(sizeof(t.value.u32));
+        t.value.u32 = htonl(p_info->data[i].pid);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = PPID;
+        t.length = htonl(sizeof(t.value.u32));
+        t.value.u32 = htonl(p_info->data[i].ppid);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u32);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = FIRST_SEEN;
+        t.length = htons(sizeof(t.value.u16));
+        t.value.u16 = htons(p_info->data[i].first_seen);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = CPU_USAGE;
+        t.length = htons(sizeof(t.value.u16));
+        t.value.u16 = htons(p_info->data[i].cpu_usage);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = MEM_USAGE;
+        t.length = htons(sizeof(t.value.u16));
+        t.value.u16 = htons(p_info->data[i].mem_usage);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = START_TIME;
+        t.length = htons(sizeof(t.value.u16));
+        t.value.u16 = htons(p_info->data[i].start_time);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = FILE_SIZE;
+        t.length = htons(sizeof(t.value.u16));
+        t.value.u16 = htons(p_info->data[i].file_size);
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u16);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        t.tag = FLAGS;
+        t.length = sizeof(t.value.u8);
+        // include more inside of bitfield
+        uint8_t temp_state = p_info->data[i].flags_table.state;
+        t.value.u8 = temp_state;
+        tlv_size = sizeof(t.tag) + t.length + sizeof(t.value.u8);
+        memcpy(offset, &t, tlv_size);
+        p_info->tlv_size += tlv_size;
+        offset += tlv_size;
+
+        // for binaries set the is_active bit to 0 to determine
+        // if its a binary... and set pid to 0..which will happen
+        // automatically with memset to zero or calloc
+
+    }
+}

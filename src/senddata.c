@@ -1,45 +1,73 @@
 #include "../include/proctypes.h"
-#include <stdint.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+// #include <arpa/inet.h>
 
-// these values lets the client know what data each value
-// in the data stream is
-typedef enum {
-    EXE_PATH_T,
-    COMM_T,
-    FLAGS_T,
-    CPU_TABLE_T,
-    MEM_TABLE_T,
-    LAST_ACCESS_T,
-    LAST_MODIFIED_T,
-    PID_T,
-    PPID_T,
-    FIRST_SEEN_T,
-    CPU_USAGE_T,
-    MEM_USAGE_T,
-    START_TIME_T
-} data_types;
+// static uint32_t checksum(struct proc_info *p_info){
+//     uint32_t checksum = 0;
+//     for(size_t i = 0; i < p_info->proc_count; i++){
+//         checksum +=
+//     }
+//     return checksum;
+// }
 
-// need a way to call this function with the index of the data
-//
-// could use offset by passing in the..well.. offset of the data
-static void pack_data(struct proc_info *p_info, uint8_t *network_buffer, int *offset){
-    tlv_t t; // this acts like a template that has a fixed size and holds fields for each
-    size_t tlv_header_size = sizeof(t.tag) + sizeof(t.length);
+// use htonl for every field individually only if they are greater than
+// one byte since the value does not change
 
-    // get working first then could make a function to reduce the lines of code needed?
+void send_data(struct proc_info *p_info, char *network_buffer){
+    // create packet header
+    // make sure its the one in network_buffer
+    uint32_t header_size = sizeof(struct packet_header);
+    size_t total_packet_size = header_size + p_info->tlv_size;
 
-    t.tag = PID_T;
-    t.length = sizeof(uint32_t);
-    t.value.u32 = p_info->data->pid;
-    memcpy(network_buffer + *offset, &t, tlv_header_size);
-    *offset += tlv_header_size;
+    struct packet_header header = {
+        .magic_number = htonl((uint32_t)MAGIC_NUMBER),
+        .payload_length = htonl(total_packet_size),
+        .version = htonl(1.0),
+        .sequence = htonl(p_info->sequence++),
+        // .crc = htonl(0)
+    };
 
-    t.tag = PPID_T;
-    t.length = sizeof(uint32_t);
-    t.value.u32 = p_info->data->ppid;
-    memcpy(network_buffer + *offset, &t, tlv_header_size);
-    *offset += tlv_header_size;
+    memcpy(network_buffer, &header, sizeof(header));
 
-    // continue for other types
+    struct sockaddr_in server_address;
+
+    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(sock_fd < 0){
+        // log error message
+        exit(EXIT_FAILURE);
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+    server_address.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
+
+    if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
+        // log error message
+        close(sock_fd);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t total_sent = 0;
+    while(total_sent < total_packet_size) {
+        ssize_t sent = send(sock_fd, network_buffer + total_sent,
+                            total_packet_size - total_sent, 0);
+
+        if(sent < 0){
+            // log error message
+            close(sock_fd);
+            exit(EXIT_FAILURE);
+        }
+
+        total_sent += sent;
+    }
+
+    close(sock_fd);
 }

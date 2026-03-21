@@ -10,7 +10,7 @@
 struct proc_info* global_struct_ptr = NULL;
 volatile sig_atomic_t exit_flag = 0;
 
-// move this loggin logic to a headerfile?/.c file
+// move this logging logic to a headerfile?/.c file
 // like a utils.c for just this function below
 // and header for the macro
 int g_logging = 0;
@@ -28,55 +28,73 @@ int g_logging = 0;
 
 static void handle_sigint(int sig){
     if (global_struct_ptr != NULL) {
-        save_state(global_struct_ptr); // how does this point to the original one? put in notes
-        global_struct_ptr = NULL;
+        exit_flag = 1;
+
+        // goal is to send the data out fully then it can exit?
+        global_struct_ptr = NULL; // fix later
         exit(0);
     }
 }
 
 static struct proc_info* create_info(){
 
-    struct proc_info *p_info = malloc(sizeof(struct proc_info));
+    // using calloc to zeroize the data before hand... i know that once
+    // the os give the memory to this it is already all zero's but
+    // just for consistancy i'll do this
+    struct proc_info *p_info = calloc(1, sizeof(struct proc_info));
 
     if(!p_info){
-        perror("Error: Could not malloc proc_info");
-        return NULL;
+        perror("Error: Could not calloc proc_info");
+        exit(EXIT_FAILURE);
     }
 
     p_info->capacity = DEFAULT_MAX;
 
-    p_info->data = malloc(sizeof(proc_data_t) * p_info->capacity);
-
-    p_info->data->cpu_table = malloc(sizeof(proc_cpu_usage_t));
-    p_info->data->mem_table = malloc(sizeof(proc_mem_usage_t));
+    p_info->data = calloc(p_info->capacity, sizeof(proc_data_t));
 
     // adjust for additional information added in headerfile
 
-    // union needs to be malloced since another file will use it
-    // tlv does not since it acts as a template
     return p_info;
+}
+
+static char *create_netbuf(struct proc_info *p_info){
+    size_t header_size = sizeof(struct packet_header);
+    // have function that gets the current proc count
+
+    size_t data_size = p_info->proc_count * sizeof(tlv_t);
+    char *net_buf = calloc(1, header_size + data_size);
+
+    return net_buf;
+}
+
+static void clean(struct proc_info *p_info, char *network_buffer){
+    free(network_buffer);
+    p_info->tlv_size = 0;
 }
 
 int main(int argc, char *argv[]){
 
-    // implement loggin more with a global macro?
     if(argc > 1 && strcmp(argv[1], "-v") == 0){
         g_logging = 1;
+        LOG("Agent starting in verbose debug mode...");
     }
 
-    LOG("Agent starting in verbose debug mode...");
-
     struct proc_info *p_info = create_info();
+
     global_struct_ptr = p_info;
     signal(SIGINT, handle_sigint);
-    load_state(p_info);
 
-    double diff_time;
+    while(exit_flag == 0) {
 
-    while(!exit_flag) {
-        scan_procs(p_info);
-        save_state(p_info);
-        usleep(DELTA_PROGRAM);
+        scan_data(p_info);
+        char *network_buffer = create_netbuf(p_info);
+        pack_data(p_info, network_buffer);
+        send_data(p_info, network_buffer);
+
+        // only things that are reused everytime that is heap allocated
+        // need to be freed within the clean function...so make sure to find those
+        clean(p_info, network_buffer);
+        sleep(DELTA_PROGRAM);
     }
 
     return 0;

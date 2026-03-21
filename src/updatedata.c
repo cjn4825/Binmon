@@ -1,6 +1,5 @@
 #include <ctype.h>
 #include <dirent.h>
-#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,17 +15,23 @@
 *
 */
 
-void update_capacity(struct proc_info *p_info){
-    if(p_info->proc_count >= DEFAULT_MAX){
+void check_capacity(struct proc_info *p_info){
+    if(p_info->proc_count >= p_info->capacity * RESIZE_PERCENTAGE){
+        size_t new_cap = p_info->capacity *= 2;
 
-        int new_size = 128;
+        p_info->data = realloc(p_info->data, new_cap);
 
-        while(new_size <= p_info->proc_count){
-            new_size *= 2;
+        if(p_info->data == NULL){
+            // error log saying it failed to allocate it
+            exit(EXIT_FAILURE);
         }
 
-        p_info->data = realloc(p_info->data, new_size);
-        p_info->capacity = new_size;
+        size_t size_remaining = sizeof(proc_data_t) * (new_cap - p_info->proc_count);
+
+        memset(&p_info->data[p_info->proc_count], '\0', size_remaining);
+
+        p_info->capacity = new_cap;
+
     }
 }
 
@@ -57,13 +62,8 @@ static void update_stats(
     int start_time = 0;
     int stat_value_place = 1;
 
-    // int mem_index = 0;
-    // int cpu_index = 0;
-    // float avg_mem = 0;
-    // float avg_cpu = 0;
-
     // temp variable for bitfield value
-    uint8_t temp_state = 0;
+    uint8_t temp_state;
 
     proc_data_t *data = &p_info->data[proc_index];
 
@@ -92,17 +92,9 @@ static void update_stats(
                         break;
                 }
 
-                // create mem table of 5 elements
-                // free it at the end of the whileloop
-
-                // don't need to right now?
-
-                // once all fields are matched above then its marked as
-                // not missing
-                //
-                //
-                // also put values that need to be set once here as well
+                // values that need to be set once
                 data->exe_path = exe;
+                data->file_size = file_stats.st_size;
                 data->flags_table.not_missing = 1;
             }
 
@@ -182,46 +174,21 @@ static void update_stats(
 
             fclose(p_file);
 
-            // values updated list:
-            // pid
-            // comm
-            // ppid
-            // start_time
-            // state
-            // last_access
-            // last_modified
-            // is_old
-            // exe_path
-            // cpu_usage
-            // mem_usage
-            // first_seen
-            //      left to update:
-            //      will do later once I figure out the
-            //      structure of how the data will be used
-            // cpu_up
-            // mem_up
-
             // reading from file_stats from executible section
             // needs to be updated each time
             data->last_access = file_stats.st_atim.tv_sec;
             data->last_modified = file_stats.st_mtim.tv_sec;
+            data->last_status = file_stats.st_ctim.tv_sec;
 
             //only set if its not old yet
+            //
+            //will remove later to decrease cpu usage
+            //since this can be done on the client side
             if(data->last_access >= DEFAULT_OLD){
                 data->flags_table.is_old = 1;
             }
-
-            // have the tables malloced inside of first
-            // switch case...have global varible that acts
-            // as the index
-            // for each loop of a normal tick the value at that
-            // index is changed and the variable is updated
-            // if the index is at the end then reset to zero
-
-            // also have varible that is the average of all 5 entries
-            // if the new value being written is 10 percent
-            // greater than the average then the mem_up flag is set
         }
+
         stat_value_place++;
         left_index = right_index + 1;
         right_index = left_index + 1;
@@ -230,14 +197,14 @@ static void update_stats(
 // index is the location in the main struct that the info should be updated
 // if not there then it should be at the very end?
 static int find_pid_index(struct proc_info *p_info, pid_t pid){
-    for(int i = 0; i < p_info->proc_count; i++){
+    for(size_t i = 0; i < p_info->proc_count; i++){
         if(p_info->data[i].pid == pid){
             return i;
         }
     }
 
     if(p_info->proc_count + 1 >= p_info->capacity){
-        update_capacity(p_info);
+        check_capacity(p_info);
     }
 
     u_int32_t proc_next_index = p_info->proc_count;
@@ -263,6 +230,8 @@ static char *get_symlink_path(char pid){
         return NULL;
     }
 
+
+    // see if i need to set the last value to null terminating
     link[link_length] = '\0';
 
     return link;
@@ -297,7 +266,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 
         // lstat because I don't want to follow sym links
         // ...think i also need to use S_ISLNK?
-        if(!lstat(path, &bin_stats)){
+        if(lstat(path, &bin_stats) != 0){
             continue;
         }
 
@@ -308,27 +277,23 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 
             // put logic here that checks if its already
             // in main struct
-            for(int i = 0; i < p_info->proc_count; i++){
+            for(size_t i = 0; i < p_info->proc_count; i++){
 
                 char *exe_path = p_info->data[i].exe_path;
                 char *d_name = p_info_bin->d_name;
 
-                // if(p_entry->data[i].exe_path != p_entry_bin->d_name){
-                // actually don't know if both are null terminating
-                // i guess ill check in the future
-                if(!strncmp(exe_path, d_name, sizeof(*d_name))){
+                if(strncmp(exe_path, d_name, sizeof(*d_name)) != 0){
                     // if not equal to each other
 
-                    // add to main struct with pid of 0
+                    // add to main struct with pid of -1
                     // and leave everything else alone but
                     //
                     //
                     // if a bin is turned into a process then i also need to search
                     // if its a bin and delete that element?
 
-                    // update this to check capacity
-                    // and do something like if check_capacity then continue
-                    update_capacity(p_info);
+                    check_capacity(p_info);
+
                     u_int32_t proc_next_index = p_info->proc_count;
 
                     // zero as a special indicator that its a binary to the client
@@ -348,7 +313,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 void scan_procs(struct proc_info *p_info){
     DIR *p_dir = opendir("/proc");
 
-    if(!p_dir) {
+    if(p_dir == NULL) {
         perror("ERROR: could not read /proc");
         return;
     }
@@ -357,12 +322,11 @@ void scan_procs(struct proc_info *p_info){
 
     while((p_entry = readdir(p_dir)) != NULL) {
 
-        // loops through each pid dir
         if(isdigit(p_entry->d_name[0])){
             pid_t pid = atoi(p_entry->d_name);
             int index = find_pid_index(p_info, pid);
             char path[PATH_MAX];
-            char *stats = malloc(256); // replace no magic number(256)
+            char *stats = calloc(1, STATS_LENGTH);
 
             snprintf(path, sizeof(path), "/proc/%s/stat", p_entry->d_name);
 
@@ -371,10 +335,11 @@ void scan_procs(struct proc_info *p_info){
             struct stat file_stats;
 
             if(p_file == NULL){
+                // log error message
+                // then exit?
                 return;
             }
 
-            // check if == 0 is correct
             if(fgets(stats, sizeof(stats) , p_file) && stat(p_exe, &file_stats) == 0){
                 update_stats(p_info, stats, p_exe, file_stats, index);
                 free(stats);
@@ -383,35 +348,31 @@ void scan_procs(struct proc_info *p_info){
             fclose(p_file);
         }
 
-        char bin[] = "/bin";
-        char sbin[] = "/sbin";
-        char usr_bin[] = "/usr/bin";
-        char usr_local_bin[] = "/usr/local/bin";
-        char tmp[] = "/tmp";
-        char tmp_var[] = "/var/tmp";
-        char opt[] = "/opt";
-        char local_bin[] = "~/.local/bin";
-        char downloads[] = "~/Downloads";
-        char shm[] = "/dev/shm";
-        char user_bin[] = "~/bin";
+        char *locations[] = {
+            "/bin",
+            "/sbin",
+            "/usr/bin",
+            "/usr/local/bin",
+            "/tmp",
+            "/var/tmp",
+            "/opt",
+            "~/.local/bin",
+            "~/Downloads",
+            "/dev/shm",
+            "~/bin",
+            NULL
+        };
 
         // also need to check if the directory exists or not
         //
-        // TODO: where could i find c_time?
-        // since this might introduce a 1000 or so additions make it so the
-        // default max is set to around 1024 elements or so
-        // also make it so this scans only every 30 seconds or so
+        // make it so this scans only every 30 seconds or so for binaries
         //
-        craw_bins(p_info, bin);
-        craw_bins(p_info, sbin);
-        craw_bins(p_info, usr_bin);
-        craw_bins(p_info, usr_local_bin);
-        craw_bins(p_info, tmp);
-        craw_bins(p_info, tmp_var);
-        craw_bins(p_info, local_bin);
-        craw_bins(p_info, downloads);
-        craw_bins(p_info, shm);
-        craw_bins(p_info, user_bin);
+
+        // don't like the approach with the null sentenial value but it works for now
+
+        for(size_t i = 0; locations[i] != NULL; i++){
+            craw_bins(p_info, locations[i]);
+        }
     }
 
     closedir(p_dir);
