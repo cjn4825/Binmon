@@ -1,13 +1,8 @@
 #include "../include/proctypes.h"
 #include <arpa/inet.h>
-#include <netinet/in.h>
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
-// #include <arpa/inet.h>
 
 // static uint32_t checksum(struct proc_info *p_info){
 //     uint32_t checksum = 0;

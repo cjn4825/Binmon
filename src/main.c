@@ -6,6 +6,7 @@
 #include <signal.h>
 
 #include "../include/proctypes.h"
+#include "../include/logging.h"
 
 struct proc_info* global_struct_ptr = NULL;
 volatile sig_atomic_t exit_flag = 0;
@@ -14,17 +15,6 @@ volatile sig_atomic_t exit_flag = 0;
 // like a utils.c for just this function below
 // and header for the macro
 int g_logging = 0;
-
-#define LOG(message, ...) \
-    do { \
-        if(g_logging) { \
-            char time_buffer[10]; \
-            get_log_time(time_buffer, sizeof(time_buffer)); \
-            fprintf(stderr, "[%s][DEBUG] %s:%d | ", time_buffer, __FILE__, __LINE__); \
-            fprintf(stderr, (message), ##__VA_ARGS__); \
-            fprintf(stderr, "\n"); \
-        } \
-    }  while(0)
 
 static void handle_sigint(int sig){
     if (global_struct_ptr != NULL) {
@@ -59,8 +49,6 @@ static struct proc_info* create_info(){
 
 static char *create_netbuf(struct proc_info *p_info){
     size_t header_size = sizeof(struct packet_header);
-    // have function that gets the current proc count
-
     size_t data_size = p_info->proc_count * sizeof(tlv_t);
     char *net_buf = calloc(1, header_size + data_size);
 

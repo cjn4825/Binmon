@@ -33,7 +33,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
 
     for(size_t i = 0; i < p_info->proc_count; i++){
         t.tag = EXE_PATH;
-        t.length = sizeof(t.value.string);
+        t.length = strlen(t.value.string);
         strcpy(t.value.string, p_info->data[i].exe_path);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].exe_path);
         memcpy(offset, &t, tlv_size);
@@ -41,7 +41,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         offset += tlv_size;
 
         t.tag = COMM;
-        t.length = sizeof(t.value.string);
+        t.length = strlen(t.value.string);
         strcpy(t.value.string, p_info->data[i].comm);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].comm);
         memcpy(offset, &t, tlv_size);

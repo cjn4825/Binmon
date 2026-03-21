@@ -219,7 +219,8 @@ static char *get_symlink_path(char pid){
     char *link = malloc(PATH_MAX);
 
     if(link == NULL){
-        return NULL;
+        // log and exit
+        exit(EXIT_FAILURE);
     }
 
     int link_length = readlink(path, link, PATH_MAX - 1);
@@ -230,15 +231,11 @@ static char *get_symlink_path(char pid){
         return NULL;
     }
 
-
-    // see if i need to set the last value to null terminating
     link[link_length] = '\0';
 
     return link;
 }
 
-
-// recursive algorithm to search bins
 void craw_bins(struct proc_info *p_info, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
     // to find binaries
@@ -248,6 +245,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
     DIR *p_bin_dir = opendir(bin_path);
 
     if(!p_bin_dir) {
+        // switch to logs
         perror("ERROR: could not read /bin");
         return;
     }
@@ -255,7 +253,6 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
     while ((p_info_bin = readdir(p_bin_dir)) != NULL){
         // skip . and .. dirs
         if(strcmp(p_info_bin->d_name, ".") == 0 || strcmp(p_info_bin->d_name, "..") == 0){
-            // continue since we just need to go to the next one
             continue;
         }
 
@@ -283,12 +280,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
                 char *d_name = p_info_bin->d_name;
 
                 if(strncmp(exe_path, d_name, sizeof(*d_name)) != 0){
-                    // if not equal to each other
 
-                    // add to main struct with pid of -1
-                    // and leave everything else alone but
-                    //
-                    //
                     // if a bin is turned into a process then i also need to search
                     // if its a bin and delete that element?
 
@@ -296,7 +288,6 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 
                     u_int32_t proc_next_index = p_info->proc_count;
 
-                    // zero as a special indicator that its a binary to the client
                     p_info->data[proc_next_index].pid = 0;
                     p_info->data[proc_next_index].exe_path = path;
                     p_info->data[proc_next_index].last_access = bin_stats.st_atim.tv_sec;
@@ -368,7 +359,7 @@ void scan_procs(struct proc_info *p_info){
         // make it so this scans only every 30 seconds or so for binaries
         //
 
-        // don't like the approach with the null sentenial value but it works for now
+        // don't like the approach with the null sentinal value but it works for now
 
         for(size_t i = 0; locations[i] != NULL; i++){
             craw_bins(p_info, locations[i]);
