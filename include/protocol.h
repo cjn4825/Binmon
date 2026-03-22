@@ -7,6 +7,9 @@
 #define PORT 9000                   // port where client is listening on
 #define SERVER_ADDRESS "127.0.0.1"  // server address... localhost for now
 
+// __attribute__((packed)) for no padding
+// as this data will be sent over a network
+
 struct __attribute__((packed)) packet_header {
 
     uint32_t magic_number;              // so client knows its this data
@@ -16,7 +19,8 @@ struct __attribute__((packed)) packet_header {
     uint16_t version;                   // protocol version
 };
 
-typedef struct {
+typedef struct __attribute__((packed)) {
+
     uint8_t tag;                        // what the data is like pid or comm or last_access...
     uint16_t length;                    // length of data
 

@@ -16,7 +16,7 @@ static void check_capacity(struct proc_info *p_info){
 
         p_info->data = realloc(p_info->data, new_cap);
 
-        if(p_info->data == NULL){
+        if(unlikely(p_info->data == NULL)){
             LOG("Data failed to resize from realloc");
             exit(EXIT_FAILURE);
         }
@@ -121,14 +121,14 @@ static void update_stats(
 
             FILE *p_file = fopen("/proc/uptime", "r");
 
-            if (!p_file) {
+            if (unlikely(p_file == NULL)) {
                 LOG("failed to open /proc/uptime");
                 exit(EXIT_FAILURE);
                 return;
             }
 
             // only want to scan the first one
-            if(fscanf(p_file, "%lf", &uptime) != 1){
+            if(unlikely(fscanf(p_file, "%lf", &uptime) != 1)){
                 LOG("failed to scan /proc/uptime");
                 exit(EXIT_FAILURE);
                 return;
@@ -215,14 +215,14 @@ static char *get_symlink_path(char pid){
     snprintf(path, sizeof(path),"/proc/%c/exe", pid);
     char *link = malloc(PATH_MAX);
 
-    if(link == NULL){
+    if(unlikely(link == NULL)){
         LOG("symlink could not be found");
         exit(EXIT_FAILURE);
     }
 
     int link_length = readlink(path, link, PATH_MAX - 1);
 
-    if(link_length == -1){
+    if(unlikely(link_length == -1)){
         free(link);
         LOG("symlink could not be found");
         exit(EXIT_FAILURE);
@@ -241,7 +241,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
     struct dirent *p_info_bin;
     DIR *p_bin_dir = opendir(bin_path);
 
-    if(!p_bin_dir) {
+    if(unlikely(p_bin_dir == NULL)) {
         LOG("could not read bin_path location");
         exit(EXIT_FAILURE);
         return;
@@ -301,7 +301,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 void scan_procs(struct proc_info *p_info){
     DIR *p_dir = opendir("/proc");
 
-    if(p_dir == NULL) {
+    if(unlikely(p_dir == NULL)) {
         LOG("could not read /proc");
         exit(EXIT_FAILURE);
         return;
@@ -323,7 +323,7 @@ void scan_procs(struct proc_info *p_info){
             FILE *p_file = fopen(path, "r");
             struct stat file_stats;
 
-            if(p_file == NULL){
+            if(unlikely(p_file == NULL)){
                 LOG("could not open /proc/[pid]/stat");
                 exit(EXIT_FAILURE);
                 return;

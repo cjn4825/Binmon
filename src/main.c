@@ -31,7 +31,7 @@ static struct proc_info* create_info(){
     // just for consistancy i'll do this
     struct proc_info *p_info = calloc(1, sizeof(struct proc_info));
 
-    if(!p_info){
+    if(unlikely(p_info == NULL)){
         LOG("Could not calloc proc_info");
         exit(EXIT_FAILURE);
     }
