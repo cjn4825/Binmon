@@ -1,7 +1,9 @@
-#include "../include/proctypes.h"
 #include <netinet/in.h>
-#include <stdint.h>
 #include <string.h>
+
+#include "../include/proctypes.h"
+#include "../include/protocol.h"
+#include "../include/logging.h"
 
 // these values lets the client know what data each value
 // in the data stream is
@@ -39,6 +41,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("Exe_path set");
 
         t.tag = COMM;
         t.length = strlen(t.value.string);
@@ -47,6 +50,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("comm set");
 
         t.tag = LAST_ACCESS;
         t.length = htonl(sizeof(t.value.u32));
@@ -55,6 +59,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("last_access set");
 
         t.tag = LAST_MODIFIED;
         t.length = htonl(sizeof(t.value.u32));
@@ -63,6 +68,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("last_modified set");
 
         t.tag = LAST_STATUS;
         t.length = htonl(sizeof(t.value.u32));
@@ -71,6 +77,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("last_access set");
 
         t.tag = PID;
         t.length = htonl(sizeof(t.value.u32));
@@ -79,6 +86,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("pid set");
 
         t.tag = PPID;
         t.length = htonl(sizeof(t.value.u32));
@@ -87,6 +95,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("ppid set");
 
         t.tag = FIRST_SEEN;
         t.length = htons(sizeof(t.value.u16));
@@ -95,6 +104,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("first_seen set");
 
         t.tag = CPU_USAGE;
         t.length = htons(sizeof(t.value.u16));
@@ -103,6 +113,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("cpu_usage set");
 
         t.tag = MEM_USAGE;
         t.length = htons(sizeof(t.value.u16));
@@ -111,6 +122,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("mem_usage set");
 
         t.tag = START_TIME;
         t.length = htons(sizeof(t.value.u16));
@@ -119,6 +131,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("start_time set");
 
         t.tag = FILE_SIZE;
         t.length = htons(sizeof(t.value.u16));
@@ -127,6 +140,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("file_size set");
 
         t.tag = FLAGS;
         t.length = sizeof(t.value.u8);
@@ -137,6 +151,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         memcpy(offset, &t, tlv_size);
         p_info->tlv_size += tlv_size;
         offset += tlv_size;
+        LOG("flags set");
 
         // for binaries set the is_active bit to 0 to determine
         // if its a binary... and set pid to 0..which will happen

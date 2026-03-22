@@ -1,8 +1,11 @@
-#include "../include/proctypes.h"
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "../include/proctypes.h"
+#include "../include/protocol.h"
+#include "../include/logging.h"
 
 // static uint32_t checksum(struct proc_info *p_info){
 //     uint32_t checksum = 0;
@@ -36,7 +39,7 @@ void send_data(struct proc_info *p_info, char *network_buffer){
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if(sock_fd < 0){
-        // log error message
+        LOG("socket could not be created");
         exit(EXIT_FAILURE);
     }
 
@@ -45,7 +48,7 @@ void send_data(struct proc_info *p_info, char *network_buffer){
     server_address.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
 
     if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
-        // log error message
+        LOG("failed to set connection for socket");
         close(sock_fd);
         exit(EXIT_FAILURE);
     }
@@ -56,7 +59,7 @@ void send_data(struct proc_info *p_info, char *network_buffer){
                             total_packet_size - total_sent, 0);
 
         if(sent < 0){
-            // log error message
+            LOG("data was not sent");
             close(sock_fd);
             exit(EXIT_FAILURE);
         }

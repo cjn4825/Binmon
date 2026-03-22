@@ -7,13 +7,11 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
+#include "../include/protocol.h"
 
 struct proc_info* global_struct_ptr = NULL;
 volatile sig_atomic_t exit_flag = 0;
 
-// move this logging logic to a headerfile?/.c file
-// like a utils.c for just this function below
-// and header for the macro
 int g_logging = 0;
 
 static void handle_sigint(int sig){
@@ -34,7 +32,7 @@ static struct proc_info* create_info(){
     struct proc_info *p_info = calloc(1, sizeof(struct proc_info));
 
     if(!p_info){
-        perror("Error: Could not calloc proc_info");
+        LOG("Could not calloc proc_info");
         exit(EXIT_FAILURE);
     }
 

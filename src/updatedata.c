@@ -8,12 +8,7 @@
 #include <unistd.h>
 
 #include "../include/proctypes.h"
-
-/*
-*   detials about this file...
-*
-*
-*/
+#include "../include/logging.h"
 
 void check_capacity(struct proc_info *p_info){
     if(p_info->proc_count >= p_info->capacity * RESIZE_PERCENTAGE){
@@ -22,7 +17,7 @@ void check_capacity(struct proc_info *p_info){
         p_info->data = realloc(p_info->data, new_cap);
 
         if(p_info->data == NULL){
-            // error log saying it failed to allocate it
+            LOG("Data failed to resize from realloc");
             exit(EXIT_FAILURE);
         }
 
@@ -127,13 +122,15 @@ static void update_stats(
             FILE *p_file = fopen("/proc/uptime", "r");
 
             if (!p_file) {
-                perror("[DEBUG] Failed to open /proc/uptime");
+                LOG("failed to open /proc/uptime");
+                exit(EXIT_FAILURE);
                 return;
             }
 
             // only want to scan the first one
             if(fscanf(p_file, "%lf", &uptime) != 1){
-                perror("[DEBUG] Failed to scan /proc/uptime");
+                LOG("failed to scan /proc/uptime");
+                exit(EXIT_FAILURE);
                 return;
             }
 
@@ -219,7 +216,7 @@ static char *get_symlink_path(char pid){
     char *link = malloc(PATH_MAX);
 
     if(link == NULL){
-        // log and exit
+        LOG("symlink could not be found");
         exit(EXIT_FAILURE);
     }
 
@@ -227,8 +224,8 @@ static char *get_symlink_path(char pid){
 
     if(link_length == -1){
         free(link);
-        perror("[DEBUG] Could not find link");
-        return NULL;
+        LOG("symlink could not be found");
+        exit(EXIT_FAILURE);
     }
 
     link[link_length] = '\0';
@@ -245,8 +242,8 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
     DIR *p_bin_dir = opendir(bin_path);
 
     if(!p_bin_dir) {
-        // switch to logs
-        perror("ERROR: could not read /bin");
+        LOG("could not read bin_path location");
+        exit(EXIT_FAILURE);
         return;
     }
 
@@ -305,7 +302,8 @@ void scan_procs(struct proc_info *p_info){
     DIR *p_dir = opendir("/proc");
 
     if(p_dir == NULL) {
-        perror("ERROR: could not read /proc");
+        LOG("could not read /proc");
+        exit(EXIT_FAILURE);
         return;
     }
 
@@ -326,8 +324,8 @@ void scan_procs(struct proc_info *p_info){
             struct stat file_stats;
 
             if(p_file == NULL){
-                // log error message
-                // then exit?
+                LOG("could not open /proc/[pid]/stat");
+                exit(EXIT_FAILURE);
                 return;
             }
 
