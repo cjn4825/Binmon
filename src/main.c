@@ -53,7 +53,7 @@ static char *create_netbuf(struct proc_info *p_info){
     return net_buf;
 }
 
-static void clean(struct proc_info *p_info, char *network_buffer){
+static inline void clean(struct proc_info *p_info, char *network_buffer){
     free(network_buffer);
     p_info->tlv_size = 0;
 }

@@ -10,7 +10,7 @@
 #include "../include/proctypes.h"
 #include "../include/logging.h"
 
-void check_capacity(struct proc_info *p_info){
+static void check_capacity(struct proc_info *p_info){
     if(p_info->proc_count >= p_info->capacity * RESIZE_PERCENTAGE){
         size_t new_cap = p_info->capacity *= 2;
 
@@ -337,7 +337,7 @@ void scan_procs(struct proc_info *p_info){
             fclose(p_file);
         }
 
-        char *locations[] = {
+        const char *locations[] = {
             "/bin",
             "/sbin",
             "/usr/bin",
