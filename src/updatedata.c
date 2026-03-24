@@ -310,6 +310,21 @@ void scan_procs(struct proc_info *p_info){
         return;
     }
 
+    const char *locations[] = {
+        "/bin",
+        "/sbin",
+        "/usr/bin",
+        "/usr/local/bin",
+        "/tmp",
+        "/var/tmp",
+        "/opt",
+        "~/.local/bin",
+        "~/Downloads",
+        "/dev/shm",
+        "~/bin",
+        NULL
+    };
+
     struct dirent *p_entry;
 
     while((p_entry = readdir(p_dir)) != NULL) {
@@ -340,30 +355,23 @@ void scan_procs(struct proc_info *p_info){
             fclose(p_file);
         }
 
-        const char *locations[] = {
-            "/bin",
-            "/sbin",
-            "/usr/bin",
-            "/usr/local/bin",
-            "/tmp",
-            "/var/tmp",
-            "/opt",
-            "~/.local/bin",
-            "~/Downloads",
-            "/dev/shm",
-            "~/bin",
-            NULL
-        };
-
-        // also need to check if the directory exists or not
-        //
         // make it so this scans only every 30 seconds or so for binaries
         //
-
+        //
+        //
         // don't like the approach with the null sentinal value but it works for now
+        struct stat dir_stats;
 
         for(size_t i = 0; locations[i] != NULL; i++){
-            craw_bins(p_info, locations[i]);
+            if(stat(locations[i], &dir_stats) == 0){
+                if(S_ISDIR(dir_stats.st_mode)){
+                    craw_bins(p_info, locations[i]);
+                }
+            }
+            else {
+                LOG("could not get stats of directory");
+                exit(EXIT_FAILURE);
+            }
         }
     }
 
