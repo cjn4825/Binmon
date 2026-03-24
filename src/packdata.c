@@ -24,13 +24,17 @@ typedef enum {
 } data_types;
 
 //TODO; change to use loop instead since this is very wasteful of space
-/*      check if comm and exe have new line character don't want it
+/*
+ *  somehow loop through enum and set type depending on enum value?
+ *  with that i can set all other values for the most part...
+ *
  */
 
 void pack_data(struct proc_info *p_info, char *network_buffer){
 
     tlv_t t;
     size_t tlv_size = 0;
+    size_t total_tlv_size = 0;
     char *offset = &network_buffer[sizeof(struct packet_header)];
 
     for(size_t i = 0; i < p_info->proc_count; i++){
@@ -39,7 +43,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         strcpy(t.value.string, p_info->data[i].exe_path);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].exe_path);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("Exe_path set");
 
@@ -48,7 +52,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         strcpy(t.value.string, p_info->data[i].comm);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].comm);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("comm set");
 
@@ -57,7 +61,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u32 = htonl(p_info->data[i].last_access);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("last_access set");
 
@@ -66,7 +70,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u32 = htonl(p_info->data[i].last_modified);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("last_modified set");
 
@@ -75,7 +79,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u32 = htonl(p_info->data[i].last_status);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("last_access set");
 
@@ -84,7 +88,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u32 = htonl(p_info->data[i].pid);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("pid set");
 
@@ -93,7 +97,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u32 = htonl(p_info->data[i].ppid);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u32);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("ppid set");
 
@@ -102,7 +106,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u16 = htons(p_info->data[i].first_seen);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("first_seen set");
 
@@ -111,7 +115,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u16 = htons(p_info->data[i].cpu_usage);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("cpu_usage set");
 
@@ -120,7 +124,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u16 = htons(p_info->data[i].mem_usage);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("mem_usage set");
 
@@ -129,7 +133,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u16 = htons(p_info->data[i].start_time);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("start_time set");
 
@@ -138,7 +142,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u16 = htons(p_info->data[i].file_size);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u16);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("file_size set");
 
@@ -149,9 +153,13 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         t.value.u8 = temp_state;
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(t.value.u8);
         memcpy(offset, &t, tlv_size);
-        p_info->tlv_size += tlv_size;
+        total_tlv_size += tlv_size;
         offset += tlv_size;
         LOG("flags set");
+
+        // this might be a little faster since i keep adding within here
+        // until the end instead of multiple times
+        p_info->total_tlv_size = total_tlv_size;
 
         // for binaries set the is_active bit to 0 to determine
         // if its a binary... and set pid to 0..which will happen

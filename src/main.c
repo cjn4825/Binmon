@@ -1,5 +1,3 @@
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -7,20 +5,23 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
-#include "../include/protocol.h"
 
 struct proc_info* global_struct_ptr = NULL;
 volatile sig_atomic_t exit_flag = 0;
 
+// learn if these need to be volitile and sig_atomic_t?
+// when should they be?
+//
+//
+
 int g_logging = 0;
+int g_finished = 0;
 
 static void handle_sigint(int sig){
     if (global_struct_ptr != NULL) {
-        exit_flag = 1;
-
-        // goal is to send the data out fully then it can exit?
-        global_struct_ptr = NULL; // fix later
-        exit(0);
+        while(g_finished != 1){
+            exit_flag = 1;
+        }
     }
 }
 
@@ -40,22 +41,45 @@ static struct proc_info* create_info(){
 
     p_info->data = calloc(p_info->capacity, sizeof(proc_data_t));
 
-    // adjust for additional information added in headerfile
-
     return p_info;
 }
 
-static char *create_netbuf(struct proc_info *p_info){
-    size_t header_size = sizeof(struct packet_header);
-    size_t data_size = p_info->proc_count * sizeof(tlv_t);
-    char *net_buf = calloc(1, header_size + data_size);
 
-    return net_buf;
+// could combine and return a array of both pointers
+//
+//
+//
+//
+static char *create_databuf(struct proc_info *p_info){
+    char *data_buf = calloc(1, p_info->total_tlv_size);
+
+    if(unlikely(data_buf == NULL)){
+        LOG("Could not calloc data_buf");
+        exit(EXIT_FAILURE);
+    }
+
+    return data_buf;
 }
 
-static inline void clean(struct proc_info *p_info, char *network_buffer){
-    free(network_buffer);
-    p_info->tlv_size = 0;
+// put in another file and make sure to remove network include
+static char *create_headerbuf(struct proc_info *p_info){
+    char *header_buf = calloc(1, p_info->total_ph_size);
+
+    if(unlikely(header_buf == NULL)){
+        LOG("Could not calloc header_buf");
+        exit(EXIT_FAILURE);
+    }
+
+    return header_buf;
+}
+
+// create another file that combines the buffer creations and returns addresses
+// to where they are located for clean to work better...also needs to return
+static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf){
+    free(data_buf);
+    free(ph_buf);
+    p_info->total_tlv_size = 0;
+    p_info->total_ph_size = 0;
 }
 
 int main(int argc, char *argv[]){
@@ -67,19 +91,26 @@ int main(int argc, char *argv[]){
 
     struct proc_info *p_info = create_info();
 
+    // still need to see if this is right
     global_struct_ptr = p_info;
     signal(SIGINT, handle_sigint);
 
     while(exit_flag == 0) {
 
-        scan_data(p_info);
-        char *network_buffer = create_netbuf(p_info);
-        pack_data(p_info, network_buffer);
-        send_data(p_info, network_buffer);
+        // potential race condition
+        // between g_finished at end?
+        g_finished = 0;
 
-        // only things that are reused everytime that is heap allocated
-        // need to be freed within the clean function...so make sure to find those
-        clean(p_info, network_buffer);
+        scan_data(p_info);
+
+        char *packet_data_buffer = create_databuf(p_info);
+        char *packet_header_buffer = create_headerbuf(p_info);
+
+        pack_data(p_info, packet_data_buffer);
+        pack_header(p_info, packet_header_buffer);
+        send_packet(p_info, packet_data_buffer, packet_header_buffer);
+
+        clean(p_info, packet_data_buffer, packet_header_buffer);
         sleep(DELTA_PROGRAM);
     }
 

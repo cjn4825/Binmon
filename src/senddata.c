@@ -7,32 +7,21 @@
 #include "../include/protocol.h"
 #include "../include/logging.h"
 
-// static uint32_t checksum(struct proc_info *p_info){
-//     uint32_t checksum = 0;
-//     for(size_t i = 0; i < p_info->proc_count; i++){
-//         checksum +=
-//     }
-//     return checksum;
-// }
 
 // use htonl for every field individually only if they are greater than
 // one byte since the value does not change
 
-void send_data(struct proc_info *p_info, char *network_buffer){
-    // create packet header
-    // make sure its the one in network_buffer
-    uint32_t header_size = sizeof(struct packet_header);
-    size_t total_packet_size = header_size + p_info->tlv_size;
+void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffer){
 
-    struct packet_header header = {
-        .magic_number = htonl((uint32_t)MAGIC_NUMBER),
-        .payload_length = htonl(total_packet_size),
-        .version = htonl(1.0),
-        .sequence = htonl(p_info->sequence++),
-        // .crc = htonl(0)
-    };
+    size_t total_packet_size = p_info->total_ph_size + p_info->total_tlv_size;
 
-    memcpy(network_buffer, &header, sizeof(header));
+    char packet_buffer[total_packet_size];
+
+    // don't know if doing this works?
+    // where i pass just the reference in?
+    //
+    memcpy(&packet_buffer, &header_buffer, p_info->total_ph_size);
+    memcpy(&packet_buffer[p_info->total_ph_size], &data_buffer, p_info->total_tlv_size);
 
     struct sockaddr_in server_address;
 
@@ -55,7 +44,7 @@ void send_data(struct proc_info *p_info, char *network_buffer){
 
     size_t total_sent = 0;
     while(total_sent < total_packet_size) {
-        ssize_t sent = send(sock_fd, network_buffer + total_sent,
+        ssize_t sent = send(sock_fd, packet_buffer + total_sent,
                             total_packet_size - total_sent, 0);
 
         if(unlikely(sent < 0)){
@@ -68,4 +57,5 @@ void send_data(struct proc_info *p_info, char *network_buffer){
     }
 
     close(sock_fd);
+    g_finished = 1;
 }

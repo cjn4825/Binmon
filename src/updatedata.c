@@ -110,10 +110,12 @@ static void update_stats(
                 case START:
 
 
-                    // makes this so it changes only if its different
-                    //
-                    //
-                    memcpy(&data->start_time, source_location, sub_length);
+                    // this only runs at the start of every process
+                    // so doing unlikely is most likely wrong here
+                    // will go back later
+                    if(unlikely(data->start_time == 0)){
+                        memcpy(&data->start_time, source_location, sub_length);
+                    }
                     break;
             }
 
@@ -248,7 +250,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
     }
 
     while ((p_info_bin = readdir(p_bin_dir)) != NULL){
-        // skip . and .. dirs
+
         if(strcmp(p_info_bin->d_name, ".") == 0 || strcmp(p_info_bin->d_name, "..") == 0){
             continue;
         }
@@ -259,18 +261,18 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
         struct stat bin_stats;
 
         // lstat because I don't want to follow sym links
-        // ...think i also need to use S_ISLNK?
+        //
+        // need to check if an error happens to with unlikely
         if(lstat(path, &bin_stats) != 0){
-            continue;
+            if(S_ISLNK(bin_stats.st_mode)){
+                continue;
+            }
         }
 
         if(S_ISDIR(bin_stats.st_mode)){
             craw_bins(p_info, path);
         }
         else if(S_ISREG(bin_stats.st_mode)){
-
-            // put logic here that checks if its already
-            // in main struct
             for(size_t i = 0; i < p_info->proc_count; i++){
 
                 char *exe_path = p_info->data[i].exe_path;
@@ -288,6 +290,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
                     p_info->data[proc_next_index].pid = 0;
                     p_info->data[proc_next_index].exe_path = path;
                     p_info->data[proc_next_index].last_access = bin_stats.st_atim.tv_sec;
+                    p_info->data[proc_next_index].last_modified = bin_stats.st_mtim.tv_sec;
                     p_info->proc_count++;
                 }
             }

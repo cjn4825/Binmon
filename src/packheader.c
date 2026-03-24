@@ -1,0 +1,28 @@
+#include <arpa/inet.h>
+#include <stdint.h>
+
+#include "../include/proctypes.h"
+#include "../include/protocol.h"
+
+// fix to use an actual checksum?
+// not surehow but we'll see???
+static uint32_t checksum(struct proc_info *p_info){
+    uint32_t checksum = 0;
+    // for(size_t i = 0; i < p_info->proc_count; i++){
+    //     checksum +=
+    // }
+    return checksum;
+}
+
+void pack_header(struct proc_info *p_info, char *packet_buffer){
+
+    struct packet_header header = {
+        .magic_number = htonl((uint32_t)MAGIC_NUMBER),
+        .payload_length = htonl(sizeof(struct packet_header)),
+        .version = htonl(VERSION),
+        .sequence = htonl(p_info->sequence++),
+        .crc = htonl(checksum(p_info))
+    };
+
+    p_info->total_ph_size = sizeof(header);
+}

@@ -5,7 +5,7 @@
 
 #define MAGIC_NUMBER 0xDEEBB1F      // magic number so client knows
 #define PORT 9000                   // port where client is listening on
-#define SERVER_ADDRESS "127.0.0.1"  // server address... localhost for now
+#define SERVER_ADDRESS "127.0.0.1"  // server address (this is the server)
 
 // __attribute__((packed)) for no padding
 // as this data will be sent over a network

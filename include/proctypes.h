@@ -1,9 +1,11 @@
 #ifndef MAIN_STRUCT_H
 #define MAIN_STRUCT_H
 
+#include "logging.h"
 #include <stdint.h>
 #include <sys/types.h>
 
+#define VERSION 1.0             // program version
 #define DELTA_PROGRAM 1         // tick rate of the program
 #define RESIZE_PERCENTAGE .90   // What percent full until resizing
 #define DEFAULT_OLD 2592000     // how many days in seconds until a process is old(30 days)
@@ -44,11 +46,16 @@ struct proc_info {
     u_int32_t           proc_count;     // total processes tracked
     u_int32_t           capacity;       // allocated size
     u_int32_t           sequence;       // packet sequence state
-    u_int32_t           tlv_size;       // total size of tlvs
+    u_int32_t           total_tlv_size; // total size of tlvs
+    u_int32_t           total_ph_size;  // total size of packet header
 };
 
+extern int g_finished;
+extern int g_logging;
+
 void scan_data(struct proc_info *p_info);
-void pack_data(struct proc_info *p_info, char *network_buffer);
-void send_data(struct proc_info *p_info, char *network_buffer);
+void pack_data(struct proc_info *p_info, char *data_buffer);
+void pack_header(struct proc_info *p_info, char *packet_buffer);
+void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffer);
 
 #endif // MAIN_STRUCT_H
