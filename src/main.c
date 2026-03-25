@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
 
     struct proc_info *p_info = create_info();
 
-    while(exit_flag == 0) {
+    while(exit_flag == 0){
 
         // potential race condition
         // between g_finished at end?
