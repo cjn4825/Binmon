@@ -1,10 +1,8 @@
 #include <ctype.h>
 #include <dirent.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include "../include/proctypes.h"
@@ -96,7 +94,7 @@ static void update_stats(
             // values that need to be updated no matter what
             switch (stat_value_place) {
                 case STATE:
-                    // can't copy directly do to how the compiler
+                    // can't copy directly due to how the compiler
                     // works with bitfields
                     memcpy(&temp_state, source_location, sub_length);
                     data->flags_table.state = temp_state;
@@ -109,13 +107,10 @@ static void update_stats(
                     break;
                 case START:
 
-
-                    // this only runs at the start of every process
-                    // so doing unlikely is most likely wrong here
-                    // will go back later
-                    if(unlikely(data->start_time == 0)){
+                    if(data->start_time == 0){
                         memcpy(&data->start_time, source_location, sub_length);
                     }
+
                     break;
             }
 
@@ -130,7 +125,7 @@ static void update_stats(
             }
 
             // only want to scan the first one
-            if(unlikely(fscanf(p_file, "%lf", &uptime) != 1)){
+            if(fscanf(p_file, "%lf", &uptime) != 1){
                 LOG("failed to scan /proc/uptime");
                 exit(EXIT_FAILURE);
                 return;
@@ -202,9 +197,7 @@ static int find_pid_index(struct proc_info *p_info, pid_t pid){
         }
     }
 
-    if(p_info->proc_count + 1 >= p_info->capacity){
-        check_capacity(p_info);
-    }
+    check_capacity(p_info);
 
     u_int32_t proc_next_index = p_info->proc_count;
     p_info->proc_count++;
@@ -238,6 +231,8 @@ static char *get_symlink_path(char pid){
 void craw_bins(struct proc_info *p_info, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
     // to find binaries
+    //
+    // but doing this is expensive and makes it slow...for now just do this
 
     // search /bin
     struct dirent *p_info_bin;
@@ -261,8 +256,6 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
         struct stat bin_stats;
 
         // lstat because I don't want to follow sym links
-        //
-        // need to check if an error happens to with unlikely
         if(lstat(path, &bin_stats) != 0){
             if(S_ISLNK(bin_stats.st_mode)){
                 continue;
@@ -287,14 +280,13 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 
                     u_int32_t proc_next_index = p_info->proc_count;
 
-                    p_info->data[proc_next_index].pid = 0;
+                    // since 0 is default value don't need to set pid
                     p_info->data[proc_next_index].exe_path = path;
                     p_info->data[proc_next_index].last_access = bin_stats.st_atim.tv_sec;
                     p_info->data[proc_next_index].last_modified = bin_stats.st_mtim.tv_sec;
                     p_info->proc_count++;
                 }
             }
-
         }
     }
 
@@ -303,6 +295,8 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 
 void scan_procs(struct proc_info *p_info){
     DIR *p_dir = opendir("/proc");
+    pthread_t t_timer;
+
 
     if(unlikely(p_dir == NULL)) {
         LOG("could not read /proc");
@@ -332,8 +326,13 @@ void scan_procs(struct proc_info *p_info){
         if(isdigit(p_entry->d_name[0])){
             pid_t pid = atoi(p_entry->d_name);
             int index = find_pid_index(p_info, pid);
+
+            // some function said something about not
+            // including limits.h? so remove the PATH_MAX?
+            //
+            //
             char path[PATH_MAX];
-            char *stats = calloc(1, STATS_LENGTH);
+            char *p_stats = calloc(1, STATS_LENGTH);
 
             snprintf(path, sizeof(path), "/proc/%s/stat", p_entry->d_name);
 
@@ -347,31 +346,27 @@ void scan_procs(struct proc_info *p_info){
                 return;
             }
 
-            if(fgets(stats, sizeof(stats) , p_file) && stat(p_exe, &file_stats) == 0){
-                update_stats(p_info, stats, p_exe, file_stats, index);
-                free(stats);
+            if(fgets(p_stats, sizeof(p_stats) , p_file) && stat(p_exe, &file_stats) == 0){
+                update_stats(p_info, p_stats, p_exe, file_stats, index);
+                free(p_stats);
             }
 
             fclose(p_file);
         }
+    }
 
-        // make it so this scans only every 30 seconds or so for binaries
-        //
-        //
-        //
-        // don't like the approach with the null sentinal value but it works for now
-        struct stat dir_stats;
+    // scan binaries on the system
+    struct stat dir_stats;
 
-        for(size_t i = 0; locations[i] != NULL; i++){
-            if(stat(locations[i], &dir_stats) == 0){
-                if(S_ISDIR(dir_stats.st_mode)){
-                    craw_bins(p_info, locations[i]);
-                }
+    for(size_t i = 0; locations[i] != NULL; i++){
+        if(stat(locations[i], &dir_stats) == 0){
+            if(S_ISDIR(dir_stats.st_mode)){
+                craw_bins(p_info, locations[i]);
             }
-            else {
-                LOG("could not get stats of directory");
-                exit(EXIT_FAILURE);
-            }
+        }
+        else {
+            LOG("could not get stats of directory");
+            exit(EXIT_FAILURE);
         }
     }
 

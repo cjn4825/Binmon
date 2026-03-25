@@ -5,25 +5,15 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
-
-struct proc_info* global_struct_ptr = NULL;
-volatile sig_atomic_t exit_flag = 0;
-
-// learn if these need to be volitile and sig_atomic_t?
-// when should they be?
-//
-//
+#include "../include/signal.h"
 
 int g_logging = 0;
 int g_finished = 0;
 
-static void handle_sigint(int sig){
-    if (global_struct_ptr != NULL) {
-        while(g_finished != 1){
-            exit_flag = 1;
-        }
-    }
-}
+//
+// not sure if this goes here or in the headerfile
+// find best way to do this...
+volatile sig_atomic_t exit_flag = 0;
 
 static struct proc_info* create_info(){
 
@@ -44,12 +34,6 @@ static struct proc_info* create_info(){
     return p_info;
 }
 
-
-// could combine and return a array of both pointers
-//
-//
-//
-//
 static char *create_databuf(struct proc_info *p_info){
     char *data_buf = calloc(1, p_info->total_tlv_size);
 
@@ -73,8 +57,6 @@ static char *create_headerbuf(struct proc_info *p_info){
     return header_buf;
 }
 
-// create another file that combines the buffer creations and returns addresses
-// to where they are located for clean to work better...also needs to return
 static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf){
     free(data_buf);
     free(ph_buf);
@@ -83,6 +65,7 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
 }
 
 int main(int argc, char *argv[]){
+    signal(SIGINT, handle_sigint);
 
     if(argc > 1 && strcmp(argv[1], "-v") == 0){
         g_logging = 1;
@@ -91,21 +74,16 @@ int main(int argc, char *argv[]){
 
     struct proc_info *p_info = create_info();
 
-    // still need to see if this is right
-    global_struct_ptr = p_info;
-    signal(SIGINT, handle_sigint);
-
     while(exit_flag == 0) {
 
         // potential race condition
         // between g_finished at end?
         g_finished = 0;
 
-        scan_data(p_info);
-
         char *packet_data_buffer = create_databuf(p_info);
         char *packet_header_buffer = create_headerbuf(p_info);
 
+        scan_procs(p_info);
         pack_data(p_info, packet_data_buffer);
         pack_header(p_info, packet_header_buffer);
         send_packet(p_info, packet_data_buffer, packet_header_buffer);

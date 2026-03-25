@@ -44,7 +44,7 @@ typedef struct {
 struct proc_info {
     proc_data_t         *data;          // array of proc_data_t's
     u_int32_t           proc_count;     // total processes tracked
-    u_int32_t           capacity;       // allocated size
+    u_int32_t           capacity;       // max amount of data entries
     u_int32_t           sequence;       // packet sequence state
     u_int32_t           total_tlv_size; // total size of tlvs
     u_int32_t           total_ph_size;  // total size of packet header
@@ -53,9 +53,9 @@ struct proc_info {
 extern int g_finished;
 extern int g_logging;
 
-void scan_data(struct proc_info *p_info);
+void scan_procs(struct proc_info *p_info);
 void pack_data(struct proc_info *p_info, char *data_buffer);
 void pack_header(struct proc_info *p_info, char *packet_buffer);
 void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffer);
 
-#endif // MAIN_STRUCT_H
+#endif // !MAIN_STRUCT_H

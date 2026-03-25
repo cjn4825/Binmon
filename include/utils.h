@@ -8,4 +8,4 @@
 
 void get_log_time(char *buffer, size_t length);
 
-#endif // UTILS_H
+#endif // !UTILS_H

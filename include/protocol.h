@@ -33,4 +33,4 @@ typedef struct __attribute__((packed)) {
 
 } tlv_t;
 
-#endif // PROTOCOL_H
+#endif // !PROTOCOL_H

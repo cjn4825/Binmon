@@ -17,9 +17,6 @@ void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffe
 
     char packet_buffer[total_packet_size];
 
-    // don't know if doing this works?
-    // where i pass just the reference in?
-    //
     memcpy(&packet_buffer, &header_buffer, p_info->total_ph_size);
     memcpy(&packet_buffer[p_info->total_ph_size], &data_buffer, p_info->total_tlv_size);
 
@@ -36,7 +33,9 @@ void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffe
     server_address.sin_port = htons(PORT);
     server_address.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
 
-    if(unlikely(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0)){
+    if(unlikely(connect(sock_fd, (struct sockaddr *)&server_address,
+       sizeof(server_address)) < 0)){
+
         LOG("failed to set connection for socket");
         close(sock_fd);
         exit(EXIT_FAILURE);

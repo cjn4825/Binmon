@@ -4,13 +4,13 @@
 #include "../include/proctypes.h"
 #include "../include/protocol.h"
 
-// fix to use an actual checksum?
-// not surehow but we'll see???
+// checksum will sum all the amount of tlv data in the packet for now???
+// could just multiply but ... idk
 static uint32_t checksum(struct proc_info *p_info){
     uint32_t checksum = 0;
-    // for(size_t i = 0; i < p_info->proc_count; i++){
-    //     checksum +=
-    // }
+    for(size_t i = 0; i < p_info->proc_count; i++){
+        checksum += sizeof(tlv_t);
+    }
     return checksum;
 }
 

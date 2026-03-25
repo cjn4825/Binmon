@@ -18,4 +18,4 @@
 // not sure if this goes here but it doesn't give an error
 extern int g_logging;
 
-#endif // LOG
+#endif // !LOG
