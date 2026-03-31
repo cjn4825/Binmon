@@ -57,5 +57,7 @@ void scan_procs(struct proc_info *p_info);
 void pack_data(struct proc_info *p_info, char *data_buffer);
 void pack_header(struct proc_info *p_info, char *packet_buffer);
 void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffer);
+void check_capacity(struct proc_info *p_info);
+void update_bins(struct proc_info *p_info);
 
 #endif // !MAIN_STRUCT_H

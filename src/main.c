@@ -1,3 +1,4 @@
+#include <bits/pthreadtypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -67,6 +68,8 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
 int main(int argc, char *argv[]){
     signal(SIGINT, handle_sigint);
 
+    pthread_t bin_thread;
+
     if(argc > 1 && strcmp(argv[1], "-v") == 0){
         g_logging = 1;
         LOG("Agent starting in verbose debug mode...");
@@ -87,6 +90,11 @@ int main(int argc, char *argv[]){
         pack_data(p_info, packet_data_buffer);
         pack_header(p_info, packet_header_buffer);
         send_packet(p_info, packet_data_buffer, packet_header_buffer);
+
+        // update and send bin data only after 30 seconds...and have a mutex for accessing
+        // send_packet
+        // update_bins(p_info);
+        // send_packet(p_info, packet_data_buffer, packet_header_buffer);
 
         clean(p_info, packet_data_buffer, packet_header_buffer);
         sleep(DELTA_PROGRAM);
