@@ -44,7 +44,7 @@ static void update_stats(
         CPU_U = 14,
         CPU_S = 15,
         START = 22
-    } stat_locations;
+    } stat_locations __attribute__((unused));
 
     double uptime = 0;
     int left_index = 0;
@@ -295,8 +295,6 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
 
 void scan_procs(struct proc_info *p_info){
     DIR *p_dir = opendir("/proc");
-    pthread_t t_timer;
-
 
     if(unlikely(p_dir == NULL)) {
         LOG("could not read /proc");
