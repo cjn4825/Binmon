@@ -1,6 +1,5 @@
 #include <ctype.h>
 #include <dirent.h>
-#include <linux/limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -228,13 +227,14 @@ static char *get_symlink_path(int pid){
     }
 
     exe[link_length] = '\0';
-    char *symlink = calloc(1, link_length);
-    memcpy(symlink, exe, link_length);
+    char *symlink = calloc(1, link_length + 1);
 
     if(unlikely(symlink == NULL)){
         LOG("symlink could not be allocated");
         exit(EXIT_FAILURE);
     }
+
+    memcpy(symlink, exe, link_length);
 
     return symlink;
 }
@@ -331,15 +331,14 @@ void scan_procs(struct proc_info *p_info){
     struct dirent *p_entry;
 
     while((p_entry = readdir(p_dir)) != NULL) {
-
         if(isdigit(p_entry->d_name[0])){
             int pid = atoi(p_entry->d_name);
             int index = find_pid_index(p_info, pid);
 
             char path[PATH_MAX];
-            char *p_stats = calloc(1, STATS_LENGTH);
+            snprintf(path, sizeof(path), "/proc/%d/stat", pid);
 
-            snprintf(path, sizeof(path), "/proc/%s/stat", p_entry->d_name);
+            char p_stats[256];
 
             char *p_exe = get_symlink_path(pid);
             FILE *p_file = fopen(path, "r");
@@ -353,13 +352,22 @@ void scan_procs(struct proc_info *p_info){
 
             if(fgets(p_stats, sizeof(p_stats) , p_file) && stat(p_exe, &file_stats) == 0){
                 update_stats(p_info, p_stats, p_exe, file_stats, index);
-                free(p_stats);
+            }
+            else {
+                LOG("could not get info");
+                exit(EXIT_FAILURE);
+                return;
             }
 
             fclose(p_file);
         }
     }
 
+    // should consider puttiing binary data into a seaperate packet just on another thread every 30 seconds or so
+    //
+    //
+    //
+    //
     // scan binaries on the system
     struct stat dir_stats;
 
