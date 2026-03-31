@@ -1,4 +1,1 @@
-binmon
-bin/
-registryinfo/*
-!registryinfo/.gitkeep
+./bin/*
