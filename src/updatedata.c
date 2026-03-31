@@ -1,8 +1,10 @@
 #include <ctype.h>
 #include <dirent.h>
+#include <linux/limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "../include/proctypes.h"
@@ -19,9 +21,11 @@ static void check_capacity(struct proc_info *p_info){
             exit(EXIT_FAILURE);
         }
 
-        size_t size_remaining = sizeof(proc_data_t) * (new_cap - p_info->proc_count);
+        // size_t size_remaining = sizeof(proc_data_t) * (new_cap - p_info->proc_count);
 
-        memset(&p_info->data[p_info->proc_count], '\0', size_remaining);
+        // what is the point of this? i think i wanted to zeroise the newly allocated space
+        // but that does not matter
+        // memset(&p_info->data[p_info->proc_count], '\0', size_remaining);
 
         p_info->capacity = new_cap;
 
@@ -204,28 +208,35 @@ static int find_pid_index(struct proc_info *p_info, pid_t pid){
     return proc_next_index;
 }
 
-static char *get_symlink_path(char pid){
+static char *get_symlink_path(int pid){
 
-    char path[64];
-    snprintf(path, sizeof(path),"/proc/%c/exe", pid);
-    char *link = malloc(PATH_MAX);
+    char path[32];
+    char exe[1024];
 
-    if(unlikely(link == NULL)){
-        LOG("symlink could not be found");
+    int written = snprintf(path, sizeof(path), "/proc/%d/exe", pid);
+
+    if(unlikely(written >= sizeof(path) || written < 0)){
+        LOG("pid could not be added to /proc/[c]/exe");
         exit(EXIT_FAILURE);
     }
 
-    int link_length = readlink(path, link, PATH_MAX - 1);
+    ssize_t link_length = readlink(path, exe, sizeof(exe) - 1);
 
     if(unlikely(link_length == -1)){
-        free(link);
         LOG("symlink could not be found");
         exit(EXIT_FAILURE);
     }
 
-    link[link_length] = '\0';
+    exe[link_length] = '\0';
+    char *symlink = calloc(1, link_length);
+    memcpy(symlink, exe, link_length);
 
-    return link;
+    if(unlikely(symlink == NULL)){
+        LOG("symlink could not be allocated");
+        exit(EXIT_FAILURE);
+    }
+
+    return symlink;
 }
 
 void craw_bins(struct proc_info *p_info, const char *bin_path){
@@ -244,7 +255,7 @@ void craw_bins(struct proc_info *p_info, const char *bin_path){
         return;
     }
 
-    while ((p_info_bin = readdir(p_bin_dir)) != NULL){
+    while((p_info_bin = readdir(p_bin_dir)) != NULL){
 
         if(strcmp(p_info_bin->d_name, ".") == 0 || strcmp(p_info_bin->d_name, "..") == 0){
             continue;
@@ -322,13 +333,9 @@ void scan_procs(struct proc_info *p_info){
     while((p_entry = readdir(p_dir)) != NULL) {
 
         if(isdigit(p_entry->d_name[0])){
-            pid_t pid = atoi(p_entry->d_name);
+            int pid = atoi(p_entry->d_name);
             int index = find_pid_index(p_info, pid);
 
-            // some function said something about not
-            // including limits.h? so remove the PATH_MAX?
-            //
-            //
             char path[PATH_MAX];
             char *p_stats = calloc(1, STATS_LENGTH);
 
