@@ -68,7 +68,7 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
 int main(int argc, char *argv[]){
     signal(SIGINT, handle_sigint);
 
-    pthread_t bin_thread;
+    // pthread_t bin_thread;
 
     if(argc > 1 && strcmp(argv[1], "-v") == 0){
         g_logging = 1;
@@ -76,6 +76,7 @@ int main(int argc, char *argv[]){
     }
 
     struct proc_info *p_info = create_info();
+    // struct proc_info *p_bin_info = create_info();
 
     while(exit_flag == 0){
 
@@ -93,8 +94,17 @@ int main(int argc, char *argv[]){
 
         // update and send bin data only after 30 seconds...and have a mutex for accessing
         // send_packet
-        // update_bins(p_info);
-        // send_packet(p_info, packet_data_buffer, packet_header_buffer);
+        // update_bins(p_bin_info);
+        // send_packet(p_bin_info, packet_data_buffer, packet_header_buffer);
+
+
+        // see what i should do...either create two different instances of the main struct just for binary data
+        // or somehow integrate the bin data into the procs????
+        //
+        //
+        //
+        //
+
 
         clean(p_info, packet_data_buffer, packet_header_buffer);
         sleep(DELTA_PROGRAM);

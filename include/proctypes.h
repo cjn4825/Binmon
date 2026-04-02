@@ -22,7 +22,7 @@ typedef struct {
 
 typedef struct {
     char                *exe_path;      // Binary path
-    const char          *comm;          // process name
+    char                *comm;          // process name
 
     uint32_t            last_access;    // time last accessed
     uint32_t            last_modified;  // time last modified

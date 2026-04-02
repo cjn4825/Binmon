@@ -39,8 +39,8 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
 
     for(size_t i = 0; i < p_info->proc_count; i++){
         t.tag = EXE_PATH;
-        t.length = strlen(t.value.string);
         strcpy(t.value.string, p_info->data[i].exe_path);
+        t.length = strlen(t.value.string);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].exe_path);
         memcpy(offset, &t, tlv_size);
         total_tlv_size += tlv_size;
@@ -48,8 +48,8 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         LOG("Exe_path set");
 
         t.tag = COMM;
+        strcpy(t.value.string, p_info->data[i].comm);       // segfault issue with comm
         t.length = strlen(t.value.string);
-        strcpy(t.value.string, p_info->data[i].comm);
         tlv_size = sizeof(t.tag) + sizeof(t.length) + sizeof(p_info->data[i].comm);
         memcpy(offset, &t, tlv_size);
         total_tlv_size += tlv_size;

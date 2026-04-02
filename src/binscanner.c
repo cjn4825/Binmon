@@ -51,18 +51,23 @@ static void craw_bins(struct proc_info *p_info, const char *bin_path){
 
                 if(strncmp(exe_path, d_name, sizeof(*d_name)) != 0){
 
-                    // if a bin is turned into a process then i also need to search
-                    // if its a bin and delete that element?
+                    // since im sending this info every 30 seconds I don't need to worry about if its
+                    // running or not since this is seperate...
 
                     check_capacity(p_info);
 
-                    u_int32_t proc_next_index = p_info->proc_count;
+                    // u_int32_t proc_next_index = p_info->proc_count;
 
                     // since 0 is default value don't need to set pid
-                    p_info->data[proc_next_index].exe_path = path;
-                    p_info->data[proc_next_index].last_access = bin_stats.st_atim.tv_sec;
-                    p_info->data[proc_next_index].last_modified = bin_stats.st_mtim.tv_sec;
-                    p_info->proc_count++;
+                    //
+                    // have this so it builds its own struct...make its own instance then use the
+                    // send_data function with a mutex?
+                    //
+                    //
+                    // p_info->data[proc_next_index].exe_path = path;
+                    // p_info->data[proc_next_index].last_access = bin_stats.st_atim.tv_sec;
+                    // p_info->data[proc_next_index].last_modified = bin_stats.st_mtim.tv_sec;
+                    // p_info->proc_count++;
                 }
             }
         }

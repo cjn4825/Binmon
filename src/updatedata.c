@@ -9,6 +9,16 @@
 #include "../include/proctypes.h"
 #include "../include/logging.h"
 
+static int extract_data(char *source_location, int length){
+    int result = 0;
+    for(int i = 0; i < length; i++){
+        char c = source_location[i];
+        result = result * 10 + (c - '0');
+    }
+
+    return result;
+}
+
 static void update_stats(
     struct proc_info *p_info,
     char *p_stats,
@@ -53,16 +63,19 @@ static void update_stats(
 
                 switch (stat_value_place) {
                     case PID:
-                        memcpy(&data->pid, source_location, sub_length);
+                        data->pid = extract_data(source_location, sub_length);
                         break;
                     case COMM:
                         memcpy(&data->comm, source_location, sub_length);
+                        data->comm[sub_length] = '\0';
                         break;
                     case PPID:
-                        memcpy(&data->ppid, source_location, sub_length);
+                        data->ppid = extract_data(source_location, sub_length);
+                        // memcpy(&data->ppid, source_location, sub_length);
                         break;
                     case START:
-                        memcpy(&data->first_seen, source_location, sub_length);
+                        data->first_seen = extract_data(source_location, sub_length);
+                        // memcpy(&data->first_seen, source_location, sub_length);
                         break;
                 }
 
@@ -81,15 +94,18 @@ static void update_stats(
                     data->flags_table.state = temp_state;
                     break;
                 case CPU_U:
-                    memcpy(&cpu_u, source_location, sub_length);
+                    // memcpy(&cpu_u, source_location, sub_length);
+                    cpu_u = extract_data(source_location, sub_length);
                     break;
                 case CPU_S:
-                    memcpy(&cpu_s, source_location, sub_length);
+                    // memcpy(&cpu_s, source_location, sub_length);
+                    cpu_s = extract_data(source_location, sub_length);
                     break;
                 case START:
 
                     if(data->start_time == 0){
-                        memcpy(&data->start_time, source_location, sub_length);
+                        data->start_time = extract_data(source_location, sub_length);
+                        // memcpy(&data->start_time, source_location, sub_length);
                     }
 
                     break;
@@ -137,13 +153,14 @@ static void update_stats(
                     }
 
                     int right_digit = left_digit;
-                    while(isdigit(file[right_index])){
+                    while(isdigit(file[right_digit])){
                         right_digit++;
                     }
 
                     int total_length = right_digit - left_digit;
 
-                    memcpy(&data->mem_usage, &file[left_digit], total_length);
+                    // memcpy(&data->mem_usage, &file[left_digit], total_length);
+                    data->mem_usage = extract_data(&file[left_digit], total_length);
                 }
             }
 
@@ -162,11 +179,14 @@ static void update_stats(
             if(data->last_access >= DEFAULT_OLD){
                 data->flags_table.is_old = 1;
             }
+
+            stat_value_place++;
+            left_index = right_index + 1;
+            right_index = left_index + 1;
         }
 
-        stat_value_place++;
-        left_index = right_index + 1;
-        right_index = left_index + 1;
+        right_index++;
+
     }
 }
 // index is the location in the main struct that the info should be updated
@@ -217,21 +237,35 @@ static char *get_symlink_path(int pid){
     return symlink;
 }
 
-
-void scan_procs(struct proc_info *p_info){
-    DIR *p_dir = opendir("/proc");
-
-    if(unlikely(p_dir == NULL)) {
-        LOG("could not read /proc");
-        exit(EXIT_FAILURE);
-        return;
+int dir_filter(const struct dirent *dir){
+    if(strcmp(dir->d_name,  ".") != 0 || strcmp(dir->d_name, "..") != 0){
+        if(dir->d_type == DT_DIR && dir->d_type != DT_LNK && isdigit(dir->d_name[0])){
+            return 1;
+        }
     }
 
-    struct dirent *p_entry;
+    return 0;
+}
 
-    while((p_entry = readdir(p_dir)) != NULL) {
-        if(isdigit(p_entry->d_name[0])){
-            int pid = atoi(p_entry->d_name);
+void scan_procs(struct proc_info *p_info){
+    char p_dir[] = "/proc";
+
+    if(unlikely(p_dir == NULL)) {
+        LOG("could not create p_dir");
+        exit(EXIT_FAILURE);
+    }
+
+    struct dirent **dir_list;
+    int dir_num = scandir(p_dir, &dir_list, dir_filter, alphasort);
+
+    if(unlikely(dir_num == -1)) {
+        LOG("error using scandir");
+        exit(EXIT_FAILURE);
+    }
+
+    for(size_t i = 0; i < dir_num; i++) {
+        if(dir_list[i] != NULL){
+            int pid = atoi(dir_list[i]->d_name);
             int index = find_pid_index(p_info, pid);
 
             char path[PATH_MAX];
@@ -241,12 +275,12 @@ void scan_procs(struct proc_info *p_info){
 
             char *p_exe = get_symlink_path(pid);
             FILE *p_file = fopen(path, "r");
-            struct stat *file_stats;
+            struct stat stats;
+            struct stat *file_stats = &stats;
 
             if(unlikely(p_file == NULL)){
                 LOG("could not open /proc/[pid]/stat");
                 exit(EXIT_FAILURE);
-                return;
             }
 
             if(fgets(p_stats, sizeof(p_stats) , p_file) && stat(p_exe, file_stats) == 0){
@@ -255,10 +289,13 @@ void scan_procs(struct proc_info *p_info){
             else {
                 LOG("could not get info");
                 exit(EXIT_FAILURE);
-                return;
             }
 
             fclose(p_file);
         }
+
+        free(dir_list[i]);
     }
+
+    free(dir_list);
 }
