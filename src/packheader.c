@@ -3,6 +3,7 @@
 
 #include "../include/proctypes.h"
 #include "../include/protocol.h"
+#include "../include/thread.h"
 
 // checksum will sum all the amount of tlv data in the packet for now???
 // could just multiply but ... idk
@@ -15,6 +16,7 @@ static uint32_t checksum(struct proc_info *p_info){
 }
 
 void pack_header(struct proc_info *p_info, char *packet_buffer){
+    pthread_mutex_lock(&packet_header_lock);
 
     struct packet_header header = {
         .magic_number = htonl((uint32_t)MAGIC_NUMBER),
@@ -25,4 +27,5 @@ void pack_header(struct proc_info *p_info, char *packet_buffer){
     };
 
     p_info->total_ph_size = sizeof(header);
+    pthread_mutex_unlock(&packet_header_lock);
 }

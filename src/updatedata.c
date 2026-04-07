@@ -247,7 +247,8 @@ int dir_filter(const struct dirent *dir){
     return 0;
 }
 
-void scan_procs(struct proc_info *p_info){
+void* scan_procs(void *p_info){
+    p_info = (struct proc_info*)p_info;
     char p_dir[] = "/proc";
 
     if(unlikely(p_dir == NULL)) {
@@ -298,4 +299,5 @@ void scan_procs(struct proc_info *p_info){
     }
 
     free(dir_list);
+    return 0;
 }

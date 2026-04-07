@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -6,12 +7,11 @@
 #include "../include/proctypes.h"
 #include "../include/protocol.h"
 #include "../include/logging.h"
-
-
-// use htonl for every field individually only if they are greater than
-// one byte since the value does not change
+#include "../include/thread.h"
 
 void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffer){
+
+    pthread_mutex_lock(&send_lock);
 
     size_t total_packet_size = p_info->total_ph_size + p_info->total_tlv_size;
 
@@ -57,4 +57,5 @@ void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffe
 
     close(sock_fd);
     g_finished = 1;
+    pthread_mutex_unlock(&send_lock);
 }

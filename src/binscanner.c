@@ -76,7 +76,8 @@ static void craw_bins(struct proc_info *p_info, const char *bin_path){
     closedir(p_bin_dir);
 }
 
-void update_bins(struct proc_info *p_info){
+void* update_bins(void *p_info){
+    p_info = (struct proc_info *)p_info;
     const char *locations[] = {
         "/bin",
         "/sbin",
@@ -105,4 +106,6 @@ void update_bins(struct proc_info *p_info){
             exit(EXIT_FAILURE);
         }
     }
+
+    return 0;
 }

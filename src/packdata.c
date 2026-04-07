@@ -1,9 +1,11 @@
 #include <netinet/in.h>
+#include <pthread.h>
 #include <string.h>
 
 #include "../include/proctypes.h"
 #include "../include/protocol.h"
 #include "../include/logging.h"
+#include "../include/thread.h"
 
 // these values lets the client know what data each value
 // in the data stream is
@@ -31,6 +33,7 @@ typedef enum {
  */
 
 void pack_data(struct proc_info *p_info, char *network_buffer){
+    pthread_mutex_lock(&packet_lock);
 
     tlv_t t;
     size_t tlv_size = 0;
@@ -164,6 +167,7 @@ void pack_data(struct proc_info *p_info, char *network_buffer){
         // for binaries set the is_active bit to 0 to determine
         // if its a binary... and set pid to 0..which will happen
         // automatically with memset to zero or calloc
-
     }
+
+    pthread_mutex_unlock(&packet_lock);
 }

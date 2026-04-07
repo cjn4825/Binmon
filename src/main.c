@@ -1,4 +1,3 @@
-#include <bits/pthreadtypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -7,6 +6,7 @@
 #include "../include/proctypes.h"
 #include "../include/logging.h"
 #include "../include/signal.h"
+#include "../include/thread.h"
 
 int g_logging = 0;
 int g_finished = 0;
@@ -16,7 +16,7 @@ int g_finished = 0;
 // find best way to do this...
 volatile sig_atomic_t exit_flag = 0;
 
-static struct proc_info* create_info(){
+static void* create_info(){
 
     // using calloc to zeroize the data before hand... i know that once
     // the os give the memory to this it is already all zero's but
@@ -32,7 +32,7 @@ static struct proc_info* create_info(){
 
     p_info->data = calloc(p_info->capacity, sizeof(proc_data_t));
 
-    return p_info;
+    return (void *)p_info;
 }
 
 static char *create_databuf(struct proc_info *p_info){
@@ -68,7 +68,10 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
 int main(int argc, char *argv[]){
     signal(SIGINT, handle_sigint);
 
-    // pthread_t bin_thread;
+    init_mutexes();
+
+    pthread_t proc_thread;
+    pthread_t bin_thread;
 
     if(argc > 1 && strcmp(argv[1], "-v") == 0){
         g_logging = 1;
@@ -76,39 +79,38 @@ int main(int argc, char *argv[]){
     }
 
     struct proc_info *p_info = create_info();
-    // struct proc_info *p_bin_info = create_info();
+    struct proc_info *p_bin_info = create_info();
 
     while(exit_flag == 0){
 
-        // potential race condition
-        // between g_finished at end?
-        g_finished = 0;
+        // potential race condition ??
+        // just make it so once one thread is active then it leaves??
+        // g_finished = 0;
 
-        char *packet_data_buffer = create_databuf(p_info);
-        char *packet_header_buffer = create_headerbuf(p_info);
+        void *packet_data_buffer = create_databuf(p_info);
+        void *packet_header_buffer = create_headerbuf(p_info);
 
-        scan_procs(p_info);
+        if(unlikely(pthread_create(&proc_thread, NULL, scan_procs(p_info), NULL) != 0)){
+            LOG("Failed to create proc_thread");
+            exit(EXIT_FAILURE);
+        }
+
+        if(unlikely(pthread_create(&bin_thread, NULL, update_bins(p_bin_info), NULL) != 0 )){
+            LOG("Failed to create bin_thread");
+            exit(EXIT_FAILURE);
+        }
+
         pack_data(p_info, packet_data_buffer);
         pack_header(p_info, packet_header_buffer);
         send_packet(p_info, packet_data_buffer, packet_header_buffer);
 
-        // update and send bin data only after 30 seconds...and have a mutex for accessing
-        // send_packet
-        // update_bins(p_bin_info);
-        // send_packet(p_bin_info, packet_data_buffer, packet_header_buffer);
-
-
-        // see what i should do...either create two different instances of the main struct just for binary data
-        // or somehow integrate the bin data into the procs????
-        //
-        //
-        //
-        //
-
-
+        pthread_join(proc_thread, NULL);
+        pthread_join(bin_thread, NULL);
         clean(p_info, packet_data_buffer, packet_header_buffer);
         sleep(DELTA_PROGRAM);
     }
+
+    destroy_mutexes();
 
     return 0;
 }
