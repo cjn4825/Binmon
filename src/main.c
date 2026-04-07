@@ -7,6 +7,7 @@
 #include "../include/logging.h"
 #include "../include/signal.h"
 #include "../include/thread.h"
+#include "../include/thread_create.h"
 
 int g_logging = 0;
 int g_finished = 0;
@@ -65,6 +66,23 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
     p_info->total_ph_size = 0;
 }
 
+static inline void create_thread(pthread_t thread, struct proc_info *p, thread_func_t func){
+
+    //
+    //implement logic to check if the function pointer is update_bins and if so run every 30 seconds
+
+    // not sure if the final argument is right
+    if(unlikely(pthread_create(&thread, NULL, func, (void*)p))){
+        LOG("Failed to create proc_thread");
+        exit(EXIT_FAILURE);
+    }
+
+    // if(unlikely(pthread_create(&bin_thread, NULL, update_bins(d), NULL) != 0 )){
+    //     LOG("Failed to create bin_thread");
+    //     exit(EXIT_FAILURE);
+    // }
+}
+
 int main(int argc, char *argv[]){
     signal(SIGINT, handle_sigint);
 
@@ -83,6 +101,8 @@ int main(int argc, char *argv[]){
 
     while(exit_flag == 0){
 
+        // testing put in headerfile????
+
         // potential race condition ??
         // just make it so once one thread is active then it leaves??
         // g_finished = 0;
@@ -90,15 +110,8 @@ int main(int argc, char *argv[]){
         void *packet_data_buffer = create_databuf(p_info);
         void *packet_header_buffer = create_headerbuf(p_info);
 
-        if(unlikely(pthread_create(&proc_thread, NULL, scan_procs(p_info), NULL) != 0)){
-            LOG("Failed to create proc_thread");
-            exit(EXIT_FAILURE);
-        }
-
-        if(unlikely(pthread_create(&bin_thread, NULL, update_bins(p_bin_info), NULL) != 0 )){
-            LOG("Failed to create bin_thread");
-            exit(EXIT_FAILURE);
-        }
+        create_thread(proc_thread, p_info, scan_procs);
+        create_thread(bin_thread, p_bin_info, update_bins);
 
         pack_data(p_info, packet_data_buffer);
         pack_header(p_info, packet_header_buffer);
