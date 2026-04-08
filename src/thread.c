@@ -5,29 +5,26 @@
 #include "../include/logging.h"
 #include "../include/thread.h"
 
-pthread_mutex_t packet_header_lock;
-pthread_mutex_t pack_lock;
-pthread_mutex_t send_lock;
 
-void init_mutexes(void){
-    if(unlikely(pthread_mutex_init(&packet_header_lock, NULL) != 0)){
+void init_mutexes(mutext_context_t *mutex_context){
+    if(unlikely(pthread_mutex_init(&mutex_context->packet_header_lock, NULL) != 0)){
         LOG("Failed to create packet_header_lock mutex");
         exit(EXIT_FAILURE);
     }
 
-    if(unlikely(pthread_mutex_init(&pack_lock, NULL) != 0)){
+    if(unlikely(pthread_mutex_init(&mutex_context->send_lock, NULL) != 0)){
         LOG("Failed to create pack_lock mutex");
         exit(EXIT_FAILURE);
     }
 
-    if(unlikely(pthread_mutex_init(&send_lock, NULL) != 0)){
+    if(unlikely(pthread_mutex_init(&mutex_context->pack_lock, NULL) != 0)){
         LOG("Failed to create send_lock mutex");
         exit(EXIT_FAILURE);
     }
 }
 
-void destroy_mutexes(void){
-    pthread_mutex_destroy(&packet_header_lock);
-    pthread_mutex_destroy(&pack_lock);
-    pthread_mutex_destroy(&send_lock);
+void destroy_mutexes(mutext_context_t *mutex_context){
+    pthread_mutex_destroy(&mutex_context->packet_header_lock);
+    pthread_mutex_destroy(&mutex_context->pack_lock);
+    pthread_mutex_destroy(&mutex_context->send_lock);
 }

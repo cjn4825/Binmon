@@ -1,3 +1,4 @@
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -7,7 +8,7 @@
 #include "../include/logging.h"
 #include "../include/signal.h"
 #include "../include/thread.h"
-#include "../include/thread_create.h"
+// #include "../include/thread_create.h"
 
 int g_logging = 0;
 int g_finished = 0;
@@ -66,64 +67,81 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
     p_info->total_ph_size = 0;
 }
 
-static inline void create_thread(pthread_t thread, struct proc_info *p, thread_func_t func){
+// static void create_thread(pthread_t thread, struct proc_info *p, thread_func_t func){
+static void* create_bin_thread(void *p_bin){
 
-    //
-    //implement logic to check if the function pointer is update_bins and if so run every 30 seconds
+    struct proc_info *p_bin_info = create_info();
 
-    // not sure if the final argument is right
-    if(unlikely(pthread_create(&thread, NULL, func, (void*)p))){
-        LOG("Failed to create proc_thread");
-        exit(EXIT_FAILURE);
+    while(exit_flag == 0){
+
+        // pack_data(p_info, packet_data_buffer);
+        // pack_header(p_info, packet_header_buffer);
+        // send_packet(p_info, packet_data_buffer, packet_header_buffer);
+
+        // clean(p_info, packet_data_buffer, packet_header_buffer);
+        sleep(BIN_SCAN_TIME);
     }
+
 
     // if(unlikely(pthread_create(&bin_thread, NULL, update_bins(d), NULL) != 0 )){
     //     LOG("Failed to create bin_thread");
     //     exit(EXIT_FAILURE);
     // }
+    //
+
+    return NULL;
+}
+
+static void* create_proc_thread(void *p_proc){
+
+    struct proc_info *p_info = create_info();
+
+    while(exit_flag == 0){
+        scan_procs(p_proc);
+
+        // pack_data(p_info, packet_data_buffer);
+        // pack_header(p_info, packet_header_buffer);
+        // send_packet(p_info, packet_data_buffer, packet_header_buffer);
+
+        // clean(p_info, packet_data_buffer, packet_header_buffer);
+        sleep(DELTA_PROGRAM);
+    }
+
+    return NULL;
 }
 
 int main(int argc, char *argv[]){
     signal(SIGINT, handle_sigint);
-
-    init_mutexes();
-
-    pthread_t proc_thread;
-    pthread_t bin_thread;
 
     if(argc > 1 && strcmp(argv[1], "-v") == 0){
         g_logging = 1;
         LOG("Agent starting in verbose debug mode...");
     }
 
-    struct proc_info *p_info = create_info();
-    struct proc_info *p_bin_info = create_info();
+    mutext_context_t *mutex_context = calloc(3, sizeof(pthread_mutex_t));
+    init_mutexes(mutex_context);
 
-    while(exit_flag == 0){
+    pthread_t proc_thread;
+    pthread_t bin_thread;
 
-        // testing put in headerfile????
+    // potential race condition ??
+    // just make it so once one thread is active then it leaves??
+    // g_finished = 0;
 
-        // potential race condition ??
-        // just make it so once one thread is active then it leaves??
-        // g_finished = 0;
+    //
+    //
+    // create pointer field in manager struct to point to both header and data buffers
+    // void *packet_data_buffer = create_databuf(p_info);
+    // void *packet_header_buffer = create_headerbuf(p_info);
 
-        void *packet_data_buffer = create_databuf(p_info);
-        void *packet_header_buffer = create_headerbuf(p_info);
+    pthread_create(&bin_thread, NULL, create_proc_thread, mutex_context);
+    pthread_create(&bin_thread, NULL, create_bin_thread, mutex_context);
 
-        create_thread(proc_thread, p_info, scan_procs);
-        create_thread(bin_thread, p_bin_info, update_bins);
+    pthread_join(proc_thread, NULL);
+    pthread_join(bin_thread, NULL);
 
-        pack_data(p_info, packet_data_buffer);
-        pack_header(p_info, packet_header_buffer);
-        send_packet(p_info, packet_data_buffer, packet_header_buffer);
-
-        pthread_join(proc_thread, NULL);
-        pthread_join(bin_thread, NULL);
-        clean(p_info, packet_data_buffer, packet_header_buffer);
-        sleep(DELTA_PROGRAM);
-    }
-
-    destroy_mutexes();
+    destroy_mutexes(mutex_context);
+    free(mutex_context);
 
     return 0;
 }

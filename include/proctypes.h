@@ -11,6 +11,7 @@
 #define DEFAULT_OLD 2592000     // how many days in seconds until a process is old(30 days)
 #define DEFAULT_MAX 1024        // default size of max procs before relloc
 #define STATS_LENGTH 256        // lenght of stats of each process
+#define BIN_SCAN_TIME 60        // amount of time in seconds that the bin scan happens
 
 typedef struct {
     // think of more to add

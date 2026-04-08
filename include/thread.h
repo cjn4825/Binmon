@@ -4,11 +4,14 @@
 
 #include <pthread.h>
 
-extern pthread_mutex_t packet_header_lock;
-extern pthread_mutex_t pack_lock;
-extern pthread_mutex_t send_lock;
+typedef struct {
+    pthread_mutex_t packet_header_lock;
+    pthread_mutex_t pack_lock;
+    pthread_mutex_t send_lock;
 
-void init_mutexes(void);
-void destroy_mutexes(void);
+} mutext_context_t;
+
+void init_mutexes(mutext_context_t *mutex_context);
+void destroy_mutexes(mutext_context_t *mutex_context);
 
 #endif // !THREAD_H
