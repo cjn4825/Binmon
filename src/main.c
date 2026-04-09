@@ -1,3 +1,4 @@
+#include <netinet/in.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +68,71 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
     p_info->total_ph_size = 0;
 }
 
+
+int server_connect(void){
+    struct sockaddr_in server_address;
+
+    int connected;
+    int backoff = 1;
+    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if(unlikely(sock_fd < 0)){
+        LOG("socket could not be created");
+        exit(EXIT_FAILURE);
+    }
+
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(PORT);
+    server_address.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
+
+    while(backoff <= (backoff * 5)){
+        if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
+            LOG("failed to set connection for socket trying again...");
+        }
+        else{
+            LOG("connected to server!");
+            connected = 0;
+            break;
+        }
+
+        sleep(backoff);
+        backoff *= 2;
+    }
+
+    if(connected == 1){
+        LOG("failed to set connection for socket");
+        close(sock_fd);
+        exit(EXIT_FAILURE);
+    }
+
+    return sock_fd;
+}
+
+static void* create_beat_thread(void *p_info){
+
+    // sleep until a signal is sent to this thread
+    // then it will send a "beat" to the server
+    //
+    // create another file to handle all of this
+    // as i would need to construct a packet too
+    // do it with the main thread and just have
+    // a pointer to it
+    // then just add to buffer
+
+    return NULL;
+}
+
+static void* create_send_thread(void *p_info){
+
+    // this will read the shared queue buffer
+    // and use values from the tlv packets and
+    // index updates to send data
+    // then it will free the data and adjust the
+    // index
+
+    return NULL;
+}
+
 // static void create_thread(pthread_t thread, struct proc_info *p, thread_func_t func){
 static void* create_bin_thread(void *p_bin){
 
@@ -110,6 +176,10 @@ static void* create_proc_thread(void *p_proc){
     return NULL;
 }
 
+//
+//
+//put in own file
+
 int main(int argc, char *argv[]){
     signal(SIGINT, handle_sigint);
 
@@ -119,10 +189,12 @@ int main(int argc, char *argv[]){
     }
 
     mutext_context_t *mutex_context = calloc(3, sizeof(pthread_mutex_t));
-    init_mutexes(mutex_context);
+    init_context(mutex_context, server_connect());
 
     pthread_t proc_thread;
     pthread_t bin_thread;
+    pthread_t send_data_thread;
+    pthread_t heart_beat_thread;
 
     // potential race condition ??
     // just make it so once one thread is active then it leaves??
@@ -135,7 +207,9 @@ int main(int argc, char *argv[]){
     // void *packet_header_buffer = create_headerbuf(p_info);
 
     pthread_create(&bin_thread, NULL, create_proc_thread, mutex_context);
-    pthread_create(&bin_thread, NULL, create_bin_thread, mutex_context);
+    pthread_create(&proc_thread, NULL, create_bin_thread, mutex_context);
+    pthread_create(&send_data_thread, NULL, create_send_thread, mutex_context);
+    pthread_create(&heart_beat_thread, NULL, create_beat_thread, mutex_context);
 
     pthread_join(proc_thread, NULL);
     pthread_join(bin_thread, NULL);
