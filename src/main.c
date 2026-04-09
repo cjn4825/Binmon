@@ -69,46 +69,8 @@ static inline void clean(struct proc_info *p_info, char *data_buf, char *ph_buf)
 }
 
 
-int server_connect(void){
-    struct sockaddr_in server_address;
 
-    int connected;
-    int backoff = 1;
-    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if(unlikely(sock_fd < 0)){
-        LOG("socket could not be created");
-        exit(EXIT_FAILURE);
-    }
-
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(PORT);
-    server_address.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
-
-    while(backoff <= (backoff * 5)){
-        if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
-            LOG("failed to set connection for socket trying again...");
-        }
-        else{
-            LOG("connected to server!");
-            connected = 0;
-            break;
-        }
-
-        sleep(backoff);
-        backoff *= 2;
-    }
-
-    if(connected == 1){
-        LOG("failed to set connection for socket");
-        close(sock_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    return sock_fd;
-}
-
-static void* create_beat_thread(void *p_info){
+static void* create_beat_thread(void *context_arg){
 
     // sleep until a signal is sent to this thread
     // then it will send a "beat" to the server
@@ -122,7 +84,7 @@ static void* create_beat_thread(void *p_info){
     return NULL;
 }
 
-static void* create_send_thread(void *p_info){
+static void* create_send_thread(void *context_arg){
 
     // this will read the shared queue buffer
     // and use values from the tlv packets and
@@ -134,7 +96,14 @@ static void* create_send_thread(void *p_info){
 }
 
 // static void create_thread(pthread_t thread, struct proc_info *p, thread_func_t func){
-static void* create_bin_thread(void *p_bin){
+static void* create_bin_thread(void *context_arg){
+
+    // void *packet_data_buffer = create_databuf(p_info);
+    // void *packet_header_buffer = create_headerbuf(p_info);
+    // wasn't typedef struct not avaliable between multiple files or something???
+    //
+    //
+    mutext_context_t *context = (mutext_context_t *)context_arg;
 
     struct proc_info *p_bin_info = create_info();
 
@@ -158,16 +127,27 @@ static void* create_bin_thread(void *p_bin){
     return NULL;
 }
 
-static void* create_proc_thread(void *p_proc){
+static void* create_proc_thread(void *context_arg){
+    // wasn't typedef struct not avaliable between multiple files or something???
+    //
+    //
+    mutext_context_t *context = (mutext_context_t *)context_arg;
+    context->p_proc_info = create_info();
 
-    struct proc_info *p_info = create_info();
+    // change these to the correct type
+    //
+    // research into how i could share these between proc and bin
+    // probably just make it two seperate ones for now...don't know if the header
+    // is the same could put that in the thread_context struct
+    void *packet_data_buffer = create_databuf(context->p_proc_info);
+    void *packet_header_buffer = create_headerbuf(context->p_proc_info);
 
     while(exit_flag == 0){
-        scan_procs(p_proc);
+        scan_procs(context->p_proc_info);
 
-        // pack_data(p_info, packet_data_buffer);
-        // pack_header(p_info, packet_header_buffer);
-        // send_packet(p_info, packet_data_buffer, packet_header_buffer);
+        pack_data(context->p_proc_info, packet_data_buffer);
+        pack_header(context->p_proc_info, packet_header_buffer);
+        send_packet(context->p_proc_info, packet_data_buffer, packet_header_buffer);
 
         // clean(p_info, packet_data_buffer, packet_header_buffer);
         sleep(DELTA_PROGRAM);
@@ -188,8 +168,8 @@ int main(int argc, char *argv[]){
         LOG("Agent starting in verbose debug mode...");
     }
 
-    mutext_context_t *mutex_context = calloc(3, sizeof(pthread_mutex_t));
-    init_context(mutex_context, server_connect());
+    mutext_context_t *thread_context = calloc(1, sizeof(mutext_context_t));
+    init_context(thread_context);
 
     pthread_t proc_thread;
     pthread_t bin_thread;
@@ -203,19 +183,17 @@ int main(int argc, char *argv[]){
     //
     //
     // create pointer field in manager struct to point to both header and data buffers
-    // void *packet_data_buffer = create_databuf(p_info);
-    // void *packet_header_buffer = create_headerbuf(p_info);
 
-    pthread_create(&bin_thread, NULL, create_proc_thread, mutex_context);
-    pthread_create(&proc_thread, NULL, create_bin_thread, mutex_context);
-    pthread_create(&send_data_thread, NULL, create_send_thread, mutex_context);
-    pthread_create(&heart_beat_thread, NULL, create_beat_thread, mutex_context);
+    pthread_create(&bin_thread, NULL, create_proc_thread, thread_context);
+    pthread_create(&proc_thread, NULL, create_bin_thread, thread_context);
+    pthread_create(&send_data_thread, NULL, create_send_thread, thread_context);
+    pthread_create(&heart_beat_thread, NULL, create_beat_thread, thread_context);
 
     pthread_join(proc_thread, NULL);
     pthread_join(bin_thread, NULL);
 
-    destroy_mutexes(mutex_context);
-    free(mutex_context);
+    destroy_mutexes(thread_context);
+    free(thread_context);
 
     return 0;
 }
