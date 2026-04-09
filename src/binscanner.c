@@ -6,7 +6,7 @@
 #include "../include/proctypes.h"
 #include "../include/logging.h"
 
-static void craw_bins(struct proc_info *p_info, const char *bin_path){
+static void craw_bins(struct proc_info_t *p_info, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
     // to find binaries
     //
@@ -76,8 +76,9 @@ static void craw_bins(struct proc_info *p_info, const char *bin_path){
     closedir(p_bin_dir);
 }
 
+// update to pass context in...same as other ones...
 void* update_bins(void *p_info){
-    p_info = (struct proc_info *)p_info;
+    p_info = (struct proc_info_t *)p_info;
     const char *locations[] = {
         "/bin",
         "/sbin",

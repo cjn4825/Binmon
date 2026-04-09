@@ -15,7 +15,9 @@
         }                                                                                \
     }  while(0)
 
-// not sure if this goes here but it doesn't give an error
+// make sure this goes here
 extern int g_logging;
+
+void log_program(void);
 
 #endif // !LOG

@@ -2,8 +2,9 @@
 #define THREAD_H
 
 #include <pthread.h>
+#include <signal.h>
 
-typedef struct {
+struct thread_context_t {
     pthread_mutex_t packet_header_lock;
     pthread_mutex_t pack_lock;
     pthread_mutex_t send_buffer_lock;
@@ -15,16 +16,21 @@ typedef struct {
     size_t current_size;
     int socket_fd;
 
-    // init these in init_context...??
-    struct proc_info *p_proc_info;
+    struct proc_info_t *p_proc_info;
     char *header_buf;
     char *data_buf;
 
-} mutext_context_t;
+};
 
-// all functions need a angent context pointer i think
-
-void init_context(mutext_context_t *thread_context);
-void destroy_mutexes(mutext_context_t *mutex_context);
+// not sure if this goes here??? probably not
+// also research into what this is exactly
+extern volatile sig_atomic_t exit_flag;
+// should these return void pointers or just void???
+void* create_beat_thread(void *context_arg);
+void* create_send_thread(void *context_arg);
+void* create_bin_thread(void *context_arg);
+void* create_proc_thread(void *context_arg);
+void init_context(struct thread_context_t *thread_context);
+void destroy_mutexes(struct thread_context_t *thread_context);
 
 #endif // !THREAD_H

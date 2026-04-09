@@ -10,7 +10,17 @@ void get_log_time(char *buffer, size_t length){
     strftime(buffer, length, "%H:%M:%S", t);
 }
 
-void check_capacity(struct proc_info *p_info){
+//
+//
+//use clean in thread code...can this be inline???
+void clean(struct proc_info_t *p_info, char *data_buf, char *ph_buf){
+    free(data_buf);
+    free(ph_buf);
+    p_info->total_tlv_size = 0;
+    p_info->total_ph_size = 0;
+}
+
+void check_capacity(struct proc_info_t *p_info){
     if(p_info->proc_count >= p_info->capacity * RESIZE_PERCENTAGE){
         size_t new_cap = p_info->capacity *= 2;
 

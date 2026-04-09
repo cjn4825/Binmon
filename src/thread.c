@@ -1,11 +1,15 @@
-// init threads
-// destroy threads
+#include <arpa/inet.h>
 #include <stdlib.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include "../include/logging.h"
 #include "../include/thread.h"
+#include "../include/create_buffer.h"
+#include "../include/settings.h"
+#include "../include/proctypes.h"
+
+volatile sig_atomic_t exit_flag = 0;
+int g_finished = 0; // with multithreading this wont work...
 
 static int server_connect(void){
     struct sockaddr_in server_address;
@@ -45,10 +49,105 @@ static int server_connect(void){
     return sock_fd;
 }
 
-void init_context(mutext_context_t *thread_context){
+void* create_beat_thread(void *context_arg){
+    // wasn't typedef struct not avaliable between multiple files or something???
+    //
+    //
+    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+
+    // sleep until a signal is sent to this thread
+    // then it will send a "beat" to the server
+    //
+    // create another file to handle all of this
+    // as i would need to construct a packet too
+    // do it with the main thread and just have
+    // a pointer to it
+    // then just add to buffer
+
+    return NULL;
+}
+
+void* create_send_thread(void *context_arg){
+    // wasn't typedef struct not avaliable between multiple files or something???
+    //
+    //
+    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+
+    // this will read the shared queue buffer
+    // and use values from the tlv packets and
+    // index updates to send data
+    // then it will free the data and adjust the
+    // index
+
+    return NULL;
+}
+
+// static void create_thread(pthread_t thread, struct proc_info *p, thread_func_t func){
+void* create_bin_thread(void *context_arg){
+
+    // void *packet_data_buffer = create_databuf(p_info);
+    // void *packet_header_buffer = create_headerbuf(p_info);
+    // wasn't typedef struct not avaliable between multiple files or something???
+    //
+    //
+    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+
+    struct proc_info_t *p_bin_info = create_info();
+
+    while(exit_flag == 0){
+
+        // pack_data(p_info, packet_data_buffer);
+        // pack_header(p_info, packet_header_buffer);
+        // send_packet(p_info, packet_data_buffer, packet_header_buffer);
+
+        // clean(p_info, packet_data_buffer, packet_header_buffer);
+        sleep(BIN_SCAN_TIME);
+    }
+
+
+    // if(unlikely(pthread_create(&bin_thread, NULL, update_bins(d), NULL) != 0 )){
+    //     LOG("Failed to create bin_thread");
+    //     exit(EXIT_FAILURE);
+    // }
+    //
+
+    return NULL;
+}
+
+void* create_proc_thread(void *context_arg){
+    // wasn't typedef struct not avaliable between multiple files or something???
+    //
+    //
+    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    context->p_proc_info = create_info();
+
+    // change these to the correct type
+    //
+    // research into how i could share these between proc and bin
+    // probably just make it two seperate ones for now...don't know if the header
+    // is the same could put that in the thread_context struct
+    void *packet_data_buffer = create_databuf(context->p_proc_info);
+    void *packet_header_buffer = create_headerbuf(context->p_proc_info);
+
+    while(exit_flag == 0){
+        scan_procs(context->p_proc_info);
+
+        pack_data(context->p_proc_info, packet_data_buffer);
+        pack_header(context->p_proc_info, packet_header_buffer);
+        send_packet(context->p_proc_info, packet_data_buffer, packet_header_buffer);
+
+        // clean(p_info, packet_data_buffer, packet_header_buffer);
+        sleep(DELTA_PROGRAM);
+    }
+
+    return NULL;
+}
+
+void init_context(struct thread_context_t *thread_context){
 
     int fd = server_connect();
 
+    // not sure if i should use unlikely here???
     if(unlikely(pthread_mutex_init(&thread_context->packet_header_lock, NULL) != 0)){
         LOG("Failed to create packet_header_lock mutex");
         exit(EXIT_FAILURE);
@@ -72,7 +171,7 @@ void init_context(mutext_context_t *thread_context){
     thread_context->socket_fd = fd;
 }
 
-void destroy_mutexes(mutext_context_t *mutex_context){
+void destroy_mutexes(struct thread_context_t *mutex_context){
     pthread_mutex_destroy(&mutex_context->packet_header_lock);
     pthread_mutex_destroy(&mutex_context->pack_lock);
     pthread_mutex_destroy(&mutex_context->send_buffer_lock);
