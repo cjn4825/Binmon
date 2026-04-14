@@ -8,7 +8,7 @@
 #define SERVER_ADDRESS "127.0.0.1"  // server address (this is the server)
 
 #define VERSION 1.0             // program version
-#define DELTA_PROGRAM 1         // tick rate of the program
+#define DELTA_PROGRAM 100       // tick rate of the program in miliseconds
 #define RESIZE_PERCENTAGE .90   // What percent full until resizing
 #define DEFAULT_OLD 2592000     // how many days in seconds until a process is old(30 days)
 #define DEFAULT_MAX 1024        // default size of max procs before relloc

@@ -17,6 +17,7 @@ struct thread_context_t {
     int socket_fd;
 
     struct proc_info_t *p_proc_info;
+    struct proc_info_t *p_bin_info;
     char *header_buf;
     char *data_buf;
 

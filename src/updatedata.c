@@ -8,6 +8,7 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
+#include "../include/settings.h"
 
 static int extract_data(char *source_location, int length){
     int result = 0;
@@ -20,7 +21,7 @@ static int extract_data(char *source_location, int length){
 }
 
 static void update_stats(
-    struct proc_info *p_info,
+    struct proc_info_t *p_info,
     char *p_stats,
     char *exe,
     struct stat *file_stats,
@@ -191,7 +192,7 @@ static void update_stats(
 }
 // index is the location in the main struct that the info should be updated
 // if not there then it should be at the very end?
-static int find_pid_index(struct proc_info *p_info, pid_t pid){
+static int find_pid_index(struct proc_info_t *p_info, pid_t pid){
     for(size_t i = 0; i < p_info->proc_count; i++){
         if(p_info->data[i].pid == pid){
             return i;
@@ -247,8 +248,8 @@ int dir_filter(const struct dirent *dir){
     return 0;
 }
 
-void* scan_procs(void *p_info){
-    p_info = (struct proc_info*)p_info;
+void scan_procs(struct proc_info_t *p_info){
+
     char p_dir[] = "/proc";
 
     if(unlikely(p_dir == NULL)) {
@@ -299,5 +300,4 @@ void* scan_procs(void *p_info){
     }
 
     free(dir_list);
-    return 0;
 }

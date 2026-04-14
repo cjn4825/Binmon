@@ -76,9 +76,9 @@ static void craw_bins(struct proc_info_t *p_info, const char *bin_path){
     closedir(p_bin_dir);
 }
 
-// update to pass context in...same as other ones...
-void* update_bins(void *p_info){
-    p_info = (struct proc_info_t *)p_info;
+void update_bins(struct thread_context_t *context){
+    struct proc_info_t *p_info = context->p_bin_info;
+
     const char *locations[] = {
         "/bin",
         "/sbin",
@@ -107,6 +107,4 @@ void* update_bins(void *p_info){
             exit(EXIT_FAILURE);
         }
     }
-
-    return 0;
 }

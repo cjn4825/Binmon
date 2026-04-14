@@ -3,6 +3,7 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
+#include "../include/settings.h"
 
 void get_log_time(char *buffer, size_t length){
     time_t now = time(NULL);
@@ -11,13 +12,20 @@ void get_log_time(char *buffer, size_t length){
 }
 
 //
-//
-//use clean in thread code...can this be inline???
-void clean(struct proc_info_t *p_info, char *data_buf, char *ph_buf){
-    free(data_buf);
-    free(ph_buf);
-    p_info->total_tlv_size = 0;
-    p_info->total_ph_size = 0;
+//research better way to do this... maybe just a simple
+//number pass in that tells what type of cleaning to do
+void clean_proc(struct thread_context_t *context){
+    free(context->p_proc_info->data);
+    free(context->header_buf);
+    context->p_proc_info->total_tlv_size = 0;
+    context->p_proc_info->total_ph_size = 0;
+}
+
+void clean_bin(struct thread_context_t *context){
+    free(context->p_bin_info->data);
+    free(context->header_buf);
+    context->p_bin_info->total_tlv_size = 0;
+    context->p_bin_info->total_ph_size = 0;
 }
 
 void check_capacity(struct proc_info_t *p_info){
@@ -30,12 +38,6 @@ void check_capacity(struct proc_info_t *p_info){
             LOG("Data failed to resize from realloc");
             exit(EXIT_FAILURE);
         }
-
-        // size_t size_remaining = sizeof(proc_data_t) * (new_cap - p_info->proc_count);
-
-        // what is the point of this? i think i wanted to zeroise the newly allocated space
-        // but that does not matter
-        // memset(&p_info->data[p_info->proc_count], '\0', size_remaining);
 
         p_info->capacity = new_cap;
 

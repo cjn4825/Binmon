@@ -6,6 +6,24 @@
 #include "../include/signal.h"
 #include "../include/thread.h"
 
+//TODO:
+//have github repo tell the user to curl the idomatic bootstrap script and run it
+//Dockerfile
+//ansible
+//change to statically linked
+//fix .gitignore
+//bootstrap script for new servers(just installs docker engine and pulls repo) and ansible
+//add timing to packet header
+//max out to 50 mb of memory usage then exit safely similar with cpu usage
+//implement logging server
+//implement yaml settings to replace macros in settings.h file
+//ci/cd pipeline...valgrind and general linting...
+//ebpf to replace parsing /proc
+//virus total api with redis database
+//tls certs with tcp connections
+//change architecture for better cpu cache usage
+//update github page
+
 int main(void){
     signal(SIGINT, handle_sigint);
     log_program(); // rename to make more sense

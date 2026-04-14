@@ -2,6 +2,7 @@
 #define MAIN_STRUCT_H
 
 #include "logging.h"
+#include "thread.h"
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -47,15 +48,11 @@ extern int g_finished;
 extern int g_logging;
 extern int g_exit_flag;
 
-// update these are mostly wrong now...
-//
-void* scan_procs(void *p_info);
-void* update_bins(void *p_info);
-// void scan_procs(struct proc_info *p_info);
-void pack_data(struct proc_info_t *p_info, char *data_buffer);
-void pack_header(struct proc_info_t *p_info, char *packet_buffer);
-void send_packet(struct proc_info_t *p_info, char *data_buffer, char *header_buffer);
-void check_capacity(struct proc_info_t *p_info);
+void scan_procs(struct proc_info_t *p_info);
+void update_bins(struct thread_context_t *context);
+void pack_data(struct thread_context_t *context);
+void pack_header(struct thread_context_t *context);
+void send_packet(struct thread_context_t *context);
 // void update_bins(struct proc_info *p_info);
 
 #endif // !MAIN_STRUCT_H

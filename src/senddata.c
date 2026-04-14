@@ -9,11 +9,11 @@
 #include "../include/logging.h"
 #include "../include/thread.h"
 
-void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffer){
+void send_packet(struct thread_context_t *context){
 
-    pthread_mutex_lock(&mutext_context->...);
-
-    size_t total_packet_size = p_info->total_ph_size + p_info->total_tlv_size;
+    pthread_mutex_lock(&context->send_data_lock);
+    // need to detmine how to diff bin for proc...
+    size_t total_packet_size = context->p_proc_info->total_ph_size + p_info->total_tlv_size;
 
     char packet_buffer[total_packet_size];
 
@@ -23,19 +23,19 @@ void send_packet(struct proc_info *p_info, char *data_buffer, char *header_buffe
 
     size_t total_sent = 0;
     while(total_sent < total_packet_size) {
-        ssize_t sent = send(sock_fd, packet_buffer + total_sent,
+        ssize_t sent = send(context->socket_fd, packet_buffer + total_sent,
                             total_packet_size - total_sent, 0);
 
         if(unlikely(sent < 0)){
             LOG("data was not sent");
-            close(sock_fd);
+            close(context->socket_fd);
             exit(EXIT_FAILURE);
         }
 
         total_sent += sent;
     }
 
-    close(sock_fd);
+    close(context->socket_fd);
     g_finished = 1;
-    pthread_mutex_unlock(&send_lock);
+    pthread_mutex_unlock(&context->send_data_lock);
 }

@@ -2,9 +2,8 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
+#include "../include/settings.h"
 
-//
-//create headerfile for these
 void* create_info(){
 
     // using calloc to zeroize the data before hand... i know that once
