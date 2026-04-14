@@ -1,0 +1,8 @@
+---
+- name: upload binmon to inventory hosts
+  hosts: production
+  become: true
+  become_method: sudo
+  gather_facts: true
+  roles:
+    - send_binmon

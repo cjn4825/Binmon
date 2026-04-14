@@ -7,11 +7,7 @@
 #include "../include/thread.h"
 
 //TODO:
-//have github repo tell the user to curl the idomatic bootstrap script and run it
-//ansible
-//systemd service file
-//create .gitkeep in bin/
-//bootstrap script for new servers(just installs docker engine and pulls repo) and ansible
+//finish bootstrap scripts and ansible
 //add timing to packet header
 //max out to 50 mb of memory usage then exit safely similar with cpu usage
 //implement logging server

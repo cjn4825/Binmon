@@ -1,0 +1,12 @@
+[Unit]
+Description=Run binmon at startup
+Afer=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/binmon
+User=root
+RemainAferExit=yes
+
+[Install]
+WantedBy=multi-user.target

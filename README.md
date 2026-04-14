@@ -4,6 +4,12 @@ Short for "Binary Monitor", it's a small project where I plan on using C and pot
 # Disclaimer
 Still very much a work in progress, and I guarantee this does not work at all, but I have it pushed to master because I'm the only one working on this project. And it's pushed at all because at my current internship situation, I can work on this project only using their systems, so I use a weird AWS EC2 instance SSM web interface to work on this from time to time, so this just acts as a "Ctrl-s" in a way.
 
+# How to Use
+```bash
+curl -LO https://raw.githubusercontent.com/cjn4825/Binmon/master/scripts/server_setup/bootstrap.sh
+./bootstrap.sh
+```
+
 # Goals
 As I said in the long description at the top, I want a way to eliminate the "I installed a tool a couple of months ago for testing and forgot to remove it, so it's taking a super small percentage of storage and resources" issue I have.
 

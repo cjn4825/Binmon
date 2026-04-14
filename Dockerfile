@@ -15,4 +15,3 @@ RUN apt install \
 
 RUN git clone https://github.com/cjn4825/binmon.git /build
 WORKDIR /build
-RUN make
