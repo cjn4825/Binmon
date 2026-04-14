@@ -1,2 +1,2 @@
-binmon
-*.o
+bin/*
+!bin/.gitkeep

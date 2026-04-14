@@ -10,9 +10,7 @@
 //have github repo tell the user to curl the idomatic bootstrap script and run it
 //ansible
 //systemd service file
-//liceance..
-//change to statically linked
-//fix .gitignore
+//create .gitkeep in bin/
 //bootstrap script for new servers(just installs docker engine and pulls repo) and ansible
 //add timing to packet header
 //max out to 50 mb of memory usage then exit safely similar with cpu usage
