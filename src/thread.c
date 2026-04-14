@@ -10,7 +10,7 @@
 #include "../include/utils.h"
 
 volatile sig_atomic_t exit_flag = 0;
-int g_finished = 0; // with multithreading this wont work...
+int g_finished = 0;
 
 static int server_connect(void){
     struct sockaddr_in server_address;
@@ -51,12 +51,10 @@ static int server_connect(void){
 }
 
 void* create_beat_thread(void *context_arg){
-    // wasn't typedef struct not avaliable between multiple files or something???
-    //
-    //
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
     while(exit_flag == 0){
-        usleep(DELTA_PROGRAM);
+        sleep(BEAT_SCAN_TIME);
+
     }
 
     // sleep until a signal is sent to this thread
@@ -71,10 +69,24 @@ void* create_beat_thread(void *context_arg){
     return NULL;
 }
 
+// sends singal to every thread as a health check
+//
+void* create_healthbeat_thread(void *context_arg){
+    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    while(exit_flag == 0){
+
+
+
+
+        sleep(HEALTH_SCAN_TIME);
+    }
+
+
+    return NULL;
+}
+
 void* create_send_thread(void *context_arg){
-    // wasn't typedef struct not avaliable between multiple files or something???
-    //
-    //
+
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
 
     while(exit_flag == 0){
@@ -91,14 +103,11 @@ void* create_send_thread(void *context_arg){
 
 void* create_bin_thread(void *context_arg){
 
-    // void *packet_data_buffer = create_databuf(p_info);
-    // void *packet_header_buffer = create_headerbuf(p_info);
-    //
-    //
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    context->p_bin_info = create_info();
 
-    struct proc_info_t *p_bin_info = create_info();
-    context->p_bin_info = p_bin_info;
+    context->bin_data_buf = create_databuf(context->p_bin_info);
+    context->bin_header_buf = create_headerbuf(context->p_bin_info);
 
     while(exit_flag == 0){
 
@@ -114,14 +123,12 @@ void* create_bin_thread(void *context_arg){
 }
 
 void* create_proc_thread(void *context_arg){
+
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
     context->p_proc_info = create_info();
 
-    // research into how i could share these between proc and bin
-    // probably just make it two seperate ones for now...don't know if the header
-    // is the same could put that in the thread_context struct
-    void *packet_data_buffer = create_databuf(context->p_proc_info);
-    void *packet_header_buffer = create_headerbuf(context->p_proc_info);
+    context->proc_data_buf = create_databuf(context->p_proc_info);
+    context->proc_header_buf = create_headerbuf(context->p_proc_info);
 
     while(exit_flag == 0){
         scan_procs(context->p_proc_info);
@@ -129,8 +136,8 @@ void* create_proc_thread(void *context_arg){
         pack_data(context);
         pack_header(context);
         send_packet(context);
-
         clean_proc(context);
+
         sleep(DELTA_PROGRAM);
     }
 

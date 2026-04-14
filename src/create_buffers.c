@@ -4,11 +4,7 @@
 #include "../include/logging.h"
 #include "../include/settings.h"
 
-void* create_info(){
-
-    // using calloc to zeroize the data before hand... i know that once
-    // the os give the memory to this it is already all zero's but
-    // just for consistancy i'll do this
+struct proc_info_t* create_info(){
     struct proc_info_t *p_info = calloc(1, sizeof(struct proc_info_t));
 
     if(unlikely(p_info == NULL)){
@@ -17,10 +13,9 @@ void* create_info(){
     }
 
     p_info->capacity = DEFAULT_MAX;
-
     p_info->data = calloc(p_info->capacity, sizeof(proc_data_t));
 
-    return (void *)p_info;
+    return p_info;
 }
 
 char *create_databuf(struct proc_info_t *p_info){

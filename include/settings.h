@@ -14,6 +14,8 @@
 #define DEFAULT_MAX 1024        // default size of max procs before relloc
 #define STATS_LENGTH 256        // lenght of stats of each process
 #define BIN_SCAN_TIME 60        // amount of time in seconds that the bin scan happens
+#define HEALTH_SCAN_TIME 5      // amount of time in seconds for health check for each thread
+#define BEAT_SCAN_TIME 20       // amount of time in seconds for alive check for each instance
 
 #define LOG_VALUE 1             // turn logging on
 
