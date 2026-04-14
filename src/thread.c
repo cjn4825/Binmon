@@ -51,7 +51,11 @@ static int server_connect(void){
 }
 
 void* create_beat_thread(void *context_arg){
+    beat_status = 1;
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    context->beat_data_buf = 0;
+    // need to set the data in there not just create...
+    context->beat_header_buf = create_headerbuf(context->p_bin_info);
     while(exit_flag == 0){
         sleep(BEAT_SCAN_TIME);
 
@@ -69,24 +73,20 @@ void* create_beat_thread(void *context_arg){
     return NULL;
 }
 
-// sends singal to every thread as a health check
-//
 void* create_healthbeat_thread(void *context_arg){
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
     while(exit_flag == 0){
-
-
-
-
+        if(beat_status) LOG("beat signal lost");
+        if(send_status) LOG("send signal lost");
+        if(bin_status) LOG("bin signal lost");
+        if(proc_status) LOG("proc signal lost");
         sleep(HEALTH_SCAN_TIME);
     }
-
-
     return NULL;
 }
 
 void* create_send_thread(void *context_arg){
-
+    send_status = 1;
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
 
     while(exit_flag == 0){
@@ -102,7 +102,7 @@ void* create_send_thread(void *context_arg){
 }
 
 void* create_bin_thread(void *context_arg){
-
+    bin_status = 1;
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
     context->p_bin_info = create_info();
 
@@ -110,7 +110,7 @@ void* create_bin_thread(void *context_arg){
     context->bin_header_buf = create_headerbuf(context->p_bin_info);
 
     while(exit_flag == 0){
-
+        update_bins(context);
         pack_data(context);
         pack_header(context);
         send_packet(context);
@@ -123,7 +123,7 @@ void* create_bin_thread(void *context_arg){
 }
 
 void* create_proc_thread(void *context_arg){
-
+    proc_status = 1;
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
     context->p_proc_info = create_info();
 
@@ -131,8 +131,7 @@ void* create_proc_thread(void *context_arg){
     context->proc_header_buf = create_headerbuf(context->p_proc_info);
 
     while(exit_flag == 0){
-        scan_procs(context->p_proc_info);
-
+        scan_procs(context);
         pack_data(context);
         pack_header(context);
         send_packet(context);

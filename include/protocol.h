@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-// __attribute__((packed)) for no padding
-// as this data will be sent over a network
-
 struct __attribute__((packed)) packet_header {
 
     uint32_t magic_number;              // so client knows its this data

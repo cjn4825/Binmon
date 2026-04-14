@@ -8,8 +8,9 @@
 
 //TODO:
 //have github repo tell the user to curl the idomatic bootstrap script and run it
-//Dockerfile
 //ansible
+//systemd service file
+//liceance..
 //change to statically linked
 //fix .gitignore
 //bootstrap script for new servers(just installs docker engine and pulls repo) and ansible

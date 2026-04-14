@@ -248,8 +248,8 @@ int dir_filter(const struct dirent *dir){
     return 0;
 }
 
-void scan_procs(struct proc_info_t *p_info){
-
+void scan_procs(struct thread_context_t *context){
+    struct proc_info_t *p_info = context->p_proc_info;
     char p_dir[] = "/proc";
 
     if(unlikely(p_dir == NULL)) {

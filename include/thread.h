@@ -19,6 +19,8 @@ struct thread_context_t {
     struct proc_info_t *p_proc_info;
     struct proc_info_t *p_bin_info;
     char *proc_header_buf;
+    char *beat_header_buf;
+    char *beat_data_buf;
     char *proc_data_buf;
     char *bin_header_buf;
     char *bin_data_buf;
@@ -32,7 +34,6 @@ struct thread_context_t {
 extern volatile sig_atomic_t exit_flag;
 // need to define these somewhere also make sure this is correct...
 extern volatile sig_atomic_t beat_status;
-extern volatile sig_atomic_t health_status;
 extern volatile sig_atomic_t send_status;
 extern volatile sig_atomic_t bin_status;
 extern volatile sig_atomic_t proc_status;
