@@ -7,6 +7,8 @@
 #include "../include/thread.h"
 
 //TODO:
+//switch to regular structs for style reasons...it makes it more readable
+///////research more say with structs in structs...pointers to them
 //figure out architecture to minimize code
 //ring buffer
 //make logging var in logging.h
