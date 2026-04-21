@@ -72,11 +72,9 @@ static void update_stats(
                         break;
                     case PPID:
                         data->ppid = extract_data(source_location, sub_length);
-                        // memcpy(&data->ppid, source_location, sub_length);
                         break;
                     case START:
                         data->first_seen = extract_data(source_location, sub_length);
-                        // memcpy(&data->first_seen, source_location, sub_length);
                         break;
                 }
 
@@ -177,7 +175,7 @@ static void update_stats(
             //
             //will remove later to decrease cpu usage
             //since this can be done on the client side
-            if(data->last_access >= DEFAULT_OLD){
+            if(data->last_access >= g_default_old){
                 data->flags_table.is_old = 1;
             }
 
@@ -251,11 +249,6 @@ int dir_filter(const struct dirent *dir){
 void scan_procs(struct thread_context_t *context){
     struct proc_info_t *p_info = context->p_proc_info;
     char p_dir[] = "/proc";
-
-    if(unlikely(p_dir == NULL)) {
-        LOG("could not create p_dir");
-        exit(EXIT_FAILURE);
-    }
 
     struct dirent **dir_list;
     int dir_num = scandir(p_dir, &dir_list, dir_filter, alphasort);

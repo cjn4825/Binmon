@@ -1,0 +1,12 @@
+---
+log_value: 1
+port: 9000
+server_address: "127.0.0.1"
+delta_program: 100
+resize_percentage: 90
+default_old: 2592000
+default_max: 1024
+stats_length: 256
+bin_scan_time: 60
+health_scan_time: 5
+beat_scan_time: 20

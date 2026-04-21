@@ -18,21 +18,15 @@ struct thread_context_t {
 
     struct proc_info_t *p_proc_info;
     struct proc_info_t *p_bin_info;
+    struct proc_info_t *p_beat_info;
     char *proc_header_buf;
-    char *beat_header_buf;
-    char *beat_data_buf;
-    char *proc_data_buf;
     char *bin_header_buf;
+    char *beat_header_buf;
+    char *proc_data_buf;
     char *bin_data_buf;
-
 };
 
-// notes: atomic means all the steps with the variable
-// have to happen...like x++ is 3 operations for example
-// volitile means the the variable will not be cached...so other threads
-// are guaranteed to read it correctly???
 extern volatile sig_atomic_t exit_flag;
-// need to define these somewhere also make sure this is correct...
 extern volatile sig_atomic_t beat_status;
 extern volatile sig_atomic_t send_status;
 extern volatile sig_atomic_t bin_status;

@@ -25,8 +25,8 @@ static int server_connect(void){
     }
 
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(PORT);
-    server_address.sin_addr.s_addr = inet_addr(SERVER_ADDRESS);
+    server_address.sin_port = htons(g_port);
+    server_address.sin_addr.s_addr = inet_addr(g_server_address);
 
     while(backoff <= (backoff * 5)){
         if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
@@ -53,22 +53,14 @@ static int server_connect(void){
 void* create_beat_thread(void *context_arg){
     beat_status = 1;
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
-    context->beat_data_buf = 0;
-    // need to set the data in there not just create...
-    context->beat_header_buf = create_headerbuf(context->p_bin_info);
-    while(exit_flag == 0){
-        sleep(BEAT_SCAN_TIME);
-
-    }
-
-    // sleep until a signal is sent to this thread
-    // then it will send a "beat" to the server
+    context->beat_header_buf = create_headerbuf(context->p_beat_info);
+    // decide what info to init inside the header
     //
-    // create another file to handle all of this
-    // as i would need to construct a packet too
-    // do it with the main thread and just have
-    // a pointer to it
-    // then just add to buffer
+    //
+    while(exit_flag == 0){
+        sleep(g_beat_scan_time);
+        send_packet(context, BEAT);
+    }
 
     return NULL;
 }
@@ -80,7 +72,7 @@ void* create_healthbeat_thread(void *context_arg){
         if(send_status) LOG("send signal lost");
         if(bin_status) LOG("bin signal lost");
         if(proc_status) LOG("proc signal lost");
-        sleep(HEALTH_SCAN_TIME);
+        sleep(g_health_scan_time);
     }
     return NULL;
 }
@@ -90,7 +82,7 @@ void* create_send_thread(void *context_arg){
     struct thread_context_t *context = (struct thread_context_t *)context_arg;
 
     while(exit_flag == 0){
-        usleep(DELTA_PROGRAM);
+        usleep(g_delta_program);
     }
     // this will read the shared queue buffer
     // and use values from the tlv packets and
@@ -113,10 +105,10 @@ void* create_bin_thread(void *context_arg){
         update_bins(context);
         pack_data(context);
         pack_header(context);
-        send_packet(context);
-        clean_bin(context);
+        send_packet(context, BIN);
+        clean(context, BIN);
 
-        sleep(BIN_SCAN_TIME);
+        sleep(g_bin_scan_time);
     }
 
     return NULL;
@@ -134,10 +126,10 @@ void* create_proc_thread(void *context_arg){
         scan_procs(context);
         pack_data(context);
         pack_header(context);
-        send_packet(context);
-        clean_proc(context);
+        send_packet(context, PROC);
+        clean(context, PROC);
 
-        sleep(DELTA_PROGRAM);
+        sleep(g_delta_program);
     }
 
     return NULL;
@@ -169,6 +161,7 @@ void init_context(struct thread_context_t *thread_context){
     }
 
     thread_context->socket_fd = fd;
+    // create shared pool
 }
 
 void destroy_mutexes(struct thread_context_t *mutex_context){

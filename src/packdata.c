@@ -6,6 +6,7 @@
 #include "../include/protocol.h"
 #include "../include/logging.h"
 #include "../include/thread.h"
+#include "../include/settings.h"
 
 // these values lets the client know what data each value
 // in the data stream is

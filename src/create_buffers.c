@@ -12,7 +12,7 @@ struct proc_info_t* create_info(){
         exit(EXIT_FAILURE);
     }
 
-    p_info->capacity = DEFAULT_MAX;
+    p_info->capacity = g_default_max;
     p_info->data = calloc(p_info->capacity, sizeof(proc_data_t));
 
     return p_info;

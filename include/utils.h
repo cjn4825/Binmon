@@ -9,7 +9,7 @@
 
 void get_log_time(char *buffer, size_t length);
 void check_capacity(struct proc_info_t *p_info);
-void clean_proc(struct thread_context_t *context);
-void clean_bin(struct thread_context_t *context);
+void clean(struct thread_context_t *context, int type);
+void import_settings(const char *path);
 
 #endif // !UTILS_H

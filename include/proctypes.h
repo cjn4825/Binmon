@@ -52,6 +52,6 @@ void scan_procs(struct thread_context_t *context);
 void update_bins(struct thread_context_t *context);
 void pack_data(struct thread_context_t *context);
 void pack_header(struct thread_context_t *context);
-void send_packet(struct thread_context_t *context);
+void send_packet(struct thread_context_t *context, int type);
 
 #endif // !MAIN_STRUCT_H

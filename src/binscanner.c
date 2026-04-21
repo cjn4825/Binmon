@@ -5,6 +5,7 @@
 
 #include "../include/proctypes.h"
 #include "../include/logging.h"
+#include "../include/settings.h"
 
 static void craw_bins(struct proc_info_t *p_info, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
