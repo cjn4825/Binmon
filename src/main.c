@@ -2,20 +2,30 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#include "../include/arena.h"
 #include "../include/logging.h"
 #include "../include/signal.h"
 #include "../include/thread.h"
 
 //TODO:
+//cpu pinning with threads and thread affinity
+//alignas for thread structs
+//simd and vectorization
+//
 //switch to regular structs for style reasons...it makes it more readable
 ///////research more say with structs in structs...pointers to them
+///
+/// use const pointers such as arena *const ..
+///
 //figure out architecture to minimize code
 //ring buffer
 //make logging var in logging.h
 //make yaml keys not dependent on order
 //arena allocator
 //add timing to packet header
-//max out to 50 mb of memory usage then exit safely similar with cpu usage...integrate into areana allocator
+//max out to 50 mb of memory usage then exit safely similar with cpu usage...
+//integrate into areana allocator
+//
 //implement logging server
 //ci/cd pipeline...valgrind and general linting...
 //ebpf to replace parsing /proc
@@ -25,6 +35,12 @@
 //update github page
 
 int main(void){
+
+    //testing layout for arena
+    struct Arena *arena = create_arena();
+    alloc_arena(arena, 10000);
+    ////////////////////////
+
     signal(SIGINT, handle_sigint);
     import_settings("../settings/settings.yml");
     set_logging();

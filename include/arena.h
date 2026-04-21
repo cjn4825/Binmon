@@ -1,26 +1,30 @@
 #ifndef ARENA_H
 #define ARENA_H
 
-#include <cstddef>
+#include <stddef.h>
 
-typedef struct {
+// REPLACE THIS WITH sizeof???
+#define INIT_ARENA_SIZE 50000
+
+struct Arena {
     size_t offset;
     size_t capacity;
-    char *buffer;
-} Arena;
+    void   *pool;
+};
 
 //notes:
 //
-//uses mmap to create buffer of size 50 mb or so
 //have one for each thread
 //first need to figure out architecture
 //only deallocate by deleting the whole thing
+//after each run?
 
 
 
 
 
-// void reset_arena(void *p);
-// Arena init_arena(size_t size);
+struct Arena* create_arena(void);
+void* alloc_arena(struct Arena *arena, size_t size);
+void reset_arena(struct Arena * arena);
 
 #endif // !ARENA_H

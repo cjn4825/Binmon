@@ -1,6 +1,7 @@
 #include "../include/ring.h"
 #include <stddef.h>
 
+// may in its own headerfile???/
 struct ring_buffer_t {
     // packets are not of fixed size so implement the client side reading here and use
     // that logic to send the data out...standard queue??
@@ -8,3 +9,9 @@ struct ring_buffer_t {
     int max;
     size_t size;
 };
+
+
+//notes:
+//
+//
+//use a af_xdp buffer to write directly to the network card
