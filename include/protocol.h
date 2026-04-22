@@ -12,7 +12,7 @@ struct __attribute__((packed)) packet_header {
     uint16_t version;                   // protocol version
 };
 
-typedef struct __attribute__((packed)) {
+struct __attribute__((packed)) tlv_t{
 
     uint8_t tag;                        // what the data is like pid or comm or last_access...
     uint16_t length;                    // length of data
@@ -24,6 +24,6 @@ typedef struct __attribute__((packed)) {
         uint8_t  u8;                    // for flags/state byte
     } value;
 
-} tlv_t;
+};
 
 #endif // !PROTOCOL_H

@@ -52,7 +52,7 @@ static int server_connect(void){
 
 void* create_beat_thread(void *context_arg){
     beat_status = 1;
-    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
     context->beat_header_buf = create_headerbuf(context->p_beat_info);
     // decide what info to init inside the header
     //
@@ -66,7 +66,7 @@ void* create_beat_thread(void *context_arg){
 }
 
 void* create_healthbeat_thread(void *context_arg){
-    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
     while(exit_flag == 0){
         if(beat_status) LOG("beat signal lost");
         if(send_status) LOG("send signal lost");
@@ -79,7 +79,7 @@ void* create_healthbeat_thread(void *context_arg){
 
 void* create_send_thread(void *context_arg){
     send_status = 1;
-    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
 
     while(exit_flag == 0){
         usleep(g_delta_program);
@@ -95,7 +95,7 @@ void* create_send_thread(void *context_arg){
 
 void* create_bin_thread(void *context_arg){
     bin_status = 1;
-    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
     context->p_bin_info = create_info();
 
     context->bin_data_buf = create_databuf(context->p_bin_info);
@@ -116,7 +116,7 @@ void* create_bin_thread(void *context_arg){
 
 void* create_proc_thread(void *context_arg){
     proc_status = 1;
-    struct thread_context_t *context = (struct thread_context_t *)context_arg;
+    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
     context->p_proc_info = create_info();
 
     context->proc_data_buf = create_databuf(context->p_proc_info);
@@ -135,7 +135,7 @@ void* create_proc_thread(void *context_arg){
     return NULL;
 }
 
-void init_context(struct thread_context_t *thread_context){
+void init_context(struct thread_context_t *const thread_context){
 
     int fd = server_connect();
 
@@ -164,7 +164,7 @@ void init_context(struct thread_context_t *thread_context){
     // create shared pool
 }
 
-void destroy_mutexes(struct thread_context_t *mutex_context){
+void destroy_mutexes(struct thread_context_t *const mutex_context){
     pthread_mutex_destroy(&mutex_context->packet_header_lock);
     pthread_mutex_destroy(&mutex_context->pack_lock);
     pthread_mutex_destroy(&mutex_context->send_buffer_lock);

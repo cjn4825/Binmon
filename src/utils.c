@@ -19,7 +19,7 @@ int g_stats_length;
 int g_bin_scan_time;
 int g_health_scan_time;
 int g_beat_scan_time;
-char *g_server_address;
+const char *const g_server_address;
 
 void get_log_time(char *buffer, size_t length){
     time_t now = time(NULL);
@@ -27,7 +27,7 @@ void get_log_time(char *buffer, size_t length){
     strftime(buffer, length, "%H:%M:%S", t);
 }
 
-void clean(struct thread_context_t *context, int type){
+void clean(struct thread_context_t *const context, int type){
 
     if(type == PROC){
         free(context->p_proc_info->data);
@@ -47,7 +47,7 @@ void clean(struct thread_context_t *context, int type){
     }
 }
 
-void check_capacity(struct proc_info_t *p_info){
+void check_capacity(struct proc_info_t *const p_info){
     if(p_info->proc_count >= p_info->capacity * g_resize_percentage){
         size_t new_cap = p_info->capacity *= 2;
 
@@ -63,7 +63,7 @@ void check_capacity(struct proc_info_t *p_info){
     }
 }
 
-void import_settings(const char *path){
+void import_settings(const char *const path){
     FILE *p_file = fopen(path, "r");
     yaml_parser_t parser;
     yaml_event_t event;

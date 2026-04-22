@@ -6,6 +6,17 @@
 // REPLACE THIS WITH sizeof???
 #define INIT_ARENA_SIZE 50000
 
+// sizes for each thread?? probably will just switch back to malloc maybe??
+
+// beat thread: 1 page...4 kb
+// health thread: 4 kb
+// proc: 2 pages
+// bin: 2 pages
+// ring buffer: 1 to 4 mb large
+
+// use malloc for beat, health and other small ones...mmap for large ones like bin and ring buffer
+
+
 struct Arena {
     size_t offset;
     size_t capacity;

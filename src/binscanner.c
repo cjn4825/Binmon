@@ -7,7 +7,7 @@
 #include "../include/logging.h"
 #include "../include/settings.h"
 
-static void craw_bins(struct proc_info_t *p_info, const char *bin_path){
+static void craw_bins(struct proc_info_t *const p_info, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
     // to find binaries
     //
@@ -47,8 +47,8 @@ static void craw_bins(struct proc_info_t *p_info, const char *bin_path){
         else if(S_ISREG(bin_stats.st_mode)){
             for(size_t i = 0; i < p_info->proc_count; i++){
 
-                char *exe_path = p_info->data[i].exe_path;
-                char *d_name = p_info_bin->d_name;
+                const char *exe_path = p_info->data[i].exe_path;
+                const char *d_name = p_info_bin->d_name;
 
                 if(strncmp(exe_path, d_name, sizeof(*d_name)) != 0){
 
@@ -78,7 +78,7 @@ static void craw_bins(struct proc_info_t *p_info, const char *bin_path){
 }
 
 void update_bins(struct thread_context_t *context){
-    struct proc_info_t *p_info = context->p_bin_info;
+    struct proc_info_t *const p_info = context->p_bin_info;
 
     const char *locations[] = {
         "/bin",

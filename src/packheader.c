@@ -11,7 +11,7 @@
 static uint32_t checksum(struct proc_info_t *p_info){
     uint32_t checksum = 0;
     for(size_t i = 0; i < p_info->proc_count; i++){
-        checksum += sizeof(tlv_t);
+        checksum += sizeof(struct tlv_t);
     }
     return checksum;
 }

@@ -47,6 +47,6 @@ extern int g_stats_length;
 extern int g_bin_scan_time;
 extern int g_health_scan_time;
 extern int g_beat_scan_time;
-extern char *g_server_address;
+extern const char *const g_server_address;
 
 #endif // !SETTINGS_H

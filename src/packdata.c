@@ -33,12 +33,13 @@ typedef enum {
  *
  */
 
-void pack_data(struct thread_context_t *context){
+void pack_data(struct thread_context_t *context, int type){
     pthread_mutex_lock(&context->pack_lock);
 
-    tlv_t t;
+    struct tlv_t t;
     size_t tlv_size = 0;
     size_t total_tlv_size = 0;
+    //          pass in type also like other ones
     char *offset = &context->header_buf[sizeof(struct packet_header)];
 
     for(size_t i = 0; i < context->p_proc_info->proc_count; i++){

@@ -12,11 +12,10 @@ struct Arena* create_arena(void){
         NULL,
         INIT_ARENA_SIZE,
         PROT_READ | PROT_WRITE,
-        NULL,       // this whole thing is wrong research later
+        MAP_ANONYMOUS | MAP_PRIVATE,       // this whole thing is wrong research later
         -1,
         0
     );
-
     if(unlikely(p == NULL)){
         LOG("could not mmap Arena pool");
         exit(EXIT_FAILURE);
@@ -26,7 +25,7 @@ struct Arena* create_arena(void){
         NULL,
         sizeof(struct Arena),
         PROT_READ | PROT_WRITE,
-        NULL,       // this whole thing is wrong research later
+        MAP_ANONYMOUS | MAP_PRIVATE,       // this whole thing is wrong research later
         -1,
         0
     );
@@ -54,6 +53,11 @@ void* alloc_arena(struct Arena *arena, size_t size){
     return &arena->pool[original_place];
 }
 
-void reset_arena(struct Arena * arena){
-    free(arena);
+// reset should just move the pointer to the start? then zeroize the data?
+// so i need to create another function that fully destroys it like this one
+//
+void reset_arena(struct Arena *arena){
+    munmap(arena->pool, sizeof(arena->pool)); // is this right???
+    munmap(arena, sizeof(struct Arena));
+    // free(arena);
 }

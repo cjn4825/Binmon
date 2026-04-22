@@ -50,7 +50,7 @@ static void update_stats(
     // temp variable for bitfield value
     uint8_t temp_state;
 
-    proc_data_t *data = &p_info->data[proc_index];
+    struct proc_data_t *data = &p_info->data[proc_index];
 
     while(right_index <= total_len - 1){
 

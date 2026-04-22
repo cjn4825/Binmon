@@ -13,7 +13,7 @@ struct proc_info_t* create_info(){
     }
 
     p_info->capacity = g_default_max;
-    p_info->data = calloc(p_info->capacity, sizeof(proc_data_t));
+    p_info->data = calloc(p_info->capacity, sizeof(struct proc_data_t));
 
     return p_info;
 }

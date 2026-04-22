@@ -12,9 +12,6 @@
 //alignas for thread structs
 //simd and vectorization
 //
-//switch to regular structs for style reasons...it makes it more readable
-///////research more say with structs in structs...pointers to them
-///
 /// use const pointers such as arena *const ..
 ///
 //figure out architecture to minimize code
@@ -37,15 +34,19 @@
 int main(void){
 
     //testing layout for arena
-    struct Arena *arena = create_arena();
+    struct Arena *const arena = create_arena();
     alloc_arena(arena, 10000);
+
+    // create small wrapper for mallocs inside create thread functions
+
+
     ////////////////////////
 
     signal(SIGINT, handle_sigint);
     import_settings("../settings/settings.yml");
     set_logging();
 
-    struct thread_context_t *thread_context = calloc(1, sizeof(struct thread_context_t));
+    struct thread_context_t *const thread_context = calloc(1, sizeof(struct thread_context_t));
     init_context(thread_context);
 
     pthread_t proc_thread, bin_thread, send_data_thread, heart_beat_thread, health_check_thread;
