@@ -37,16 +37,16 @@
 #define BEAT 3
 
 // extern int settings[];
-extern int g_log_value;
 extern int g_port;
 extern int g_delta_program;
 extern int g_resize_percentage;
+extern int g_proc_pool_size;
 extern int g_default_old;
 extern int g_default_max;
 extern int g_stats_length;
 extern int g_bin_scan_time;
 extern int g_health_scan_time;
 extern int g_beat_scan_time;
-extern const char *const g_server_address;
+extern const char *g_server_address;
 
 #endif // !SETTINGS_H

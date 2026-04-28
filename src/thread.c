@@ -1,59 +1,22 @@
-#include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "../include/logging.h"
 #include "../include/thread.h"
+#include "../include/arena.h"
 #include "../include/create_buffer.h"
 #include "../include/settings.h"
 #include "../include/proctypes.h"
 #include "../include/utils.h"
+#include "../include/server_connect.h"
 
 volatile sig_atomic_t exit_flag = 0;
 int g_finished = 0;
 
-static int server_connect(void){
-    struct sockaddr_in server_address;
-
-    int connected;
-    int backoff = 1;
-    int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if(unlikely(sock_fd < 0)){
-        LOG("socket could not be created");
-        exit(EXIT_FAILURE);
-    }
-
-    server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(g_port);
-    server_address.sin_addr.s_addr = inet_addr(g_server_address);
-
-    while(backoff <= (backoff * 5)){
-        if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
-            LOG("failed to set connection for socket trying again...");
-        }
-        else{
-            LOG("connected to server!");
-            connected = 0;
-            break;
-        }
-
-        sleep(backoff);
-        backoff *= 2;
-    }
-    if(connected == 1){
-        LOG("failed to set connection for socket");
-        close(sock_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    return sock_fd;
-}
-
 void* create_beat_thread(void *context_arg){
     beat_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
-    context->beat_header_buf = create_headerbuf(context->p_beat_info);
+    // context->beat_header_buf = create_headerbuf(context->p_beat_info);
     // decide what info to init inside the header
     //
     //
@@ -94,6 +57,9 @@ void* create_send_thread(void *context_arg){
 }
 
 void* create_bin_thread(void *context_arg){
+    // do core pinning here?
+    //
+    //
     bin_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
     context->p_bin_info = create_info();
@@ -115,20 +81,36 @@ void* create_bin_thread(void *context_arg){
 }
 
 void* create_proc_thread(void *context_arg){
+    // do core pinning here?
+    //
+    //
     proc_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
-    context->p_proc_info = create_info();
 
-    context->proc_data_buf = create_databuf(context->p_proc_info);
-    context->proc_header_buf = create_headerbuf(context->p_proc_info);
+
+    // create arean
+    struct Arena *const arena_proc = create_arena();
+    alloc_arena(arena_proc, g_proc_pool_size);
+
+    // context->p_proc_info = create_info();
+    // context->proc_data_buf = create_databuf(context->p_proc_info);
+    // context->proc_header_buf = create_headerbuf(context->p_proc_info);
+
+    // put arena for proc and data in context and remove other data
+    // need to create databuf and headerbuf too
+    size_t offset = sizeof(struct proc_info_t) +
+                    sizeof(struct proc_data_t) +
+                    sizeof(struct proc_flags_t);
 
     while(exit_flag == 0){
-        scan_procs(context);
-        pack_data(context);
-        pack_header(context);
-        send_packet(context, PROC);
-        clean(context, PROC);
-
+        void* proc_loc = &arena_proc->pool[arena_proc->offset];
+        scan_procs(proc_loc);
+        // pack_data(proc_loc);
+        // pack_header(proc_loc);                   // these will be in another thread
+        // send_packet(proc_loc, PROC);
+        // clean(proc_loc, PROC); // don't need to clean anymore?
+        //add offset then add proc_loc by that offset
+        arena_proc->offset += offset;
         sleep(g_delta_program);
     }
 
@@ -161,7 +143,6 @@ void init_context(struct thread_context_t *const thread_context){
     }
 
     thread_context->socket_fd = fd;
-    // create shared pool
 }
 
 void destroy_mutexes(struct thread_context_t *const mutex_context){

@@ -16,5 +16,6 @@
     }  while(0)
 
 void set_logging(void);
+extern int g_log_value;
 
 #endif // !LOG

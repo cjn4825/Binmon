@@ -1,12 +1,12 @@
-#ifndef MAIN_STRUCT_H
-#define MAIN_STRUCT_H
+#ifndef BIN_STRUCT_H
+#define BIN_STRUCT_H
 
 #include "logging.h"
 #include "thread.h"
 #include <stdint.h>
 #include <sys/types.h>
 
-struct proc_flags_t{
+struct bin_flags_t{
     // think of more to add
     uint8_t     state        : 4;       // state can be from 0 to 15 so 4 bits are needed
     uint8_t     is_old       : 1;
@@ -14,7 +14,7 @@ struct proc_flags_t{
 
 };
 
-struct proc_data_t{
+struct bin_data_t{
     char                   *exe_path;      // Binary path
     char                   *comm;          // process name
 
@@ -32,30 +32,18 @@ struct proc_data_t{
     uint16_t               mem_usage;      // current mem usage
     uint16_t               start_time;     // time if process started in current session
     uint16_t               file_size;      // size of file in bytes
-    struct proc_flags_t    flags_table;    // Bitfield location
+    struct bin_flags_t    flags_table;    // Bitfield location
 };
 
-struct proc_info_t {
-    struct proc_data_t     *data;          // array of proc_data_t's
-    u_int32_t              proc_count;     // total processes tracked
-    u_int32_t              capacity;       // max amount of data entries
-                                           //
-    //      change to be counter in context?...this should only contain
-    //      the info to gather the data then send it to be packed
-    //      and shipped to the ring bufer
-    u_int32_t              sequence;       // packet sequence state
-    u_int32_t              total_tlv_size; // total size of tlvs
-    u_int32_t              total_ph_size;  // total size of packet header
+struct proc_bin_t {
+    struct bin_data_t     *data;          // pointer to data
+                                          // type?
+    u_int32_t              size;       // size of data
 };
 
-// extern int g_finished; // moved these to settings? check later
-// extern int g_logging;
-// extern int g_exit_flag;
-
-void scan_procs(struct thread_context_t *context);
 void update_bins(struct thread_context_t *context);
 void pack_data(struct thread_context_t *context);
 void pack_header(struct thread_context_t *context);
-void send_packet(struct thread_context_t *context, int type);
+// void send_packet(struct thread_context_t *context, int type);
 
-#endif // !MAIN_STRUCT_H
+#endif // !BIN_STRUCT_H

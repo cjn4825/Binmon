@@ -1,41 +1,35 @@
 #ifndef ARENA_H
 #define ARENA_H
 
-#include <stddef.h>
+#include <unistd.h>
 
-// REPLACE THIS WITH sizeof???
-#define INIT_ARENA_SIZE 50000
+#define INIT_ARENA_SIZE 50000 // 50MB in bytes
 
-// sizes for each thread?? probably will just switch back to malloc maybe??
+// notes:
+// beat thread: 1 page    malloc
+// health thread: 4 page  malloc???
+// proc: 2 pages          mmap
+// bin: 2 pages           mmap
+// ring buffer: 1 to 4 mb mmap
 
-// beat thread: 1 page...4 kb
-// health thread: 4 kb
-// proc: 2 pages
-// bin: 2 pages
-// ring buffer: 1 to 4 mb large
-
-// use malloc for beat, health and other small ones...mmap for large ones like bin and ring buffer
-
+// use malloc for beat, health and other small ones...mmap for large ones like
+// bin and ring buffer
 
 struct Arena {
-    size_t offset;
-    size_t capacity;
-    void   *pool;
+  size_t offset;
+  size_t capacity;
+  void *pool;
 };
 
-//notes:
+// notes:
 //
-//have one for each thread
-//first need to figure out architecture
-//only deallocate by deleting the whole thing
-//after each run?
+// have one for each thread
+// first need to figure out architecture
+// only deallocate by deleting the whole thing
+// after each run?
 
-
-
-
-
-struct Arena* create_arena(void);
-void* alloc_arena(struct Arena *arena, size_t size);
-void reset_arena(struct Arena * arena);
+struct Arena *create_arena(void);
+void *alloc_arena(struct Arena *arena, size_t size);
+void reset_arena(struct Arena *arena);
 
 #endif // !ARENA_H

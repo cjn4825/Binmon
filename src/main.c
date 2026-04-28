@@ -8,9 +8,25 @@
 #include "../include/thread.h"
 
 //TODO:
+//
+//      notes in draw.io:
+//          create areanas for proc and bin and pack
+//
+//          make uniform pack data..highlighed in diagram
+//          ...pack data should just take in a type, value, and name
+//          to fill in tlv's...make this a simple function that then
+//          has a mutex...with this approach both proc and bin can use it
+//          at the same time sort of...change it so binary and packet data
+//          is put in the same packet...once full it will be sent out to
+//          ring buffer and just set the offset pointer back to zero...this will rewrite
+//          data until it gets formed to a packet again...
+//
+//
 //cpu pinning with threads and thread affinity
 //alignas for thread structs
 //simd and vectorization
+//switch to use atomic variables for number adjusting
+//values in threads?
 //
 /// use const pointers such as arena *const ..
 ///
@@ -32,20 +48,11 @@
 //update github page
 
 int main(void){
-
-    //testing layout for arena
-    struct Arena *const arena = create_arena();
-    alloc_arena(arena, 10000);
-
-    // create small wrapper for mallocs inside create thread functions
-
-
-    ////////////////////////
-
     signal(SIGINT, handle_sigint);
     import_settings("../settings/settings.yml");
     set_logging();
 
+    // move these to somewhere else???
     struct thread_context_t *const thread_context = calloc(1, sizeof(struct thread_context_t));
     init_context(thread_context);
 
@@ -55,7 +62,7 @@ int main(void){
     pthread_create(&proc_thread, NULL, create_bin_thread, thread_context);
     pthread_create(&send_data_thread, NULL, create_send_thread, thread_context);
     pthread_create(&heart_beat_thread, NULL, create_beat_thread, thread_context);
-    // create one for health check thread that checks statuses of all other threads
+    pthread_create(&health_check_thread, NULL, create_healthbeat_thread, thread_context);
 
     pthread_join(proc_thread, NULL);
     pthread_join(bin_thread, NULL);

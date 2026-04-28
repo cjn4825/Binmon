@@ -12,6 +12,7 @@
 int g_log_value;
 int g_port;
 int g_delta_program;
+int g_proc_pool_size;
 int g_resize_percentage;
 int g_default_old;
 int g_default_max;
@@ -19,7 +20,7 @@ int g_stats_length;
 int g_bin_scan_time;
 int g_health_scan_time;
 int g_beat_scan_time;
-const char *const g_server_address;
+const char *g_server_address;
 
 void get_log_time(char *buffer, size_t length){
     time_t now = time(NULL);
@@ -89,7 +90,9 @@ void import_settings(const char *const path){
         if(event.type == YAML_SCALAR_EVENT){
 
             yaml_char_t *value = event.data.scalar.value;
-            // this is super ugly and there's probably a better way
+            //
+            //change so it goes by key value not position to
+            //set variables
             switch (i) {
                 case 0:
                     g_log_value = *value;
@@ -98,30 +101,33 @@ void import_settings(const char *const path){
                     g_port = *value;
                     break;
                 case 2:
-                    g_server_address = (char*)value;
+                    g_server_address = (const char*)value;
                     break;
                 case 3:
-                    g_delta_program = *value;
+                    g_proc_pool_size = *value;
                     break;
                 case 4:
-                    g_resize_percentage = *value / 100;
+                    g_delta_program = *value;
                     break;
                 case 5:
-                    g_default_old = *value;
+                    g_resize_percentage = *value / 100;
                     break;
                 case 6:
-                    g_default_max = *value;
+                    g_default_old = *value;
                     break;
                 case 7:
-                    g_stats_length = *value;
+                    g_default_max = *value;
                     break;
                 case 8:
-                    g_bin_scan_time = *value;
+                    g_stats_length = *value;
                     break;
                 case 9:
-                    g_health_scan_time = *value;
+                    g_bin_scan_time = *value;
                     break;
                 case 10:
+                    g_health_scan_time = *value;
+                    break;
+                case 11:
                     g_beat_scan_time = *value;
                     break;
             }
