@@ -21,7 +21,7 @@ static int extract_data(char *source_location, int length){
 }
 
 static void update_stats(
-    struct proc_info_t *p_info,
+    struct proc_data_t *data,
     char *p_stats,
     char *exe,
     struct stat *file_stats,
@@ -50,8 +50,6 @@ static void update_stats(
     // temp variable for bitfield value
     uint8_t temp_state;
 
-    struct proc_data_t *data = &p_info->data[proc_index];
-
     while(right_index <= total_len - 1){
 
         char *right_location = &p_stats[right_index];
@@ -59,16 +57,18 @@ static void update_stats(
         if(*right_location == ' '){
             int sub_length = right_index - left_index;
             char *source_location = &p_stats[left_index];
-
-            if(data->flags_table.not_missing == 0){
+            //fix
+            if(data->flags_table.v.not_missing == 0){
 
                 switch (stat_value_place) {
                     case PID:
-                        data->pid = extract_data(source_location, sub_length);
+                        data->pid.v = extract_data(source_location, sub_length);
                         break;
                     case COMM:
-                        memcpy(&data->comm, source_location, sub_length);
+                        memcpy(&data->comm.v, source_location, sub_length);
                         data->comm[sub_length] = '\0';
+                        // set lenght
+                        data->comm.l = sizeof(data->comm.v);
                         break;
                     case PPID:
                         data->ppid = extract_data(source_location, sub_length);
@@ -246,8 +246,8 @@ int dir_filter(const struct dirent *dir){
     return 0;
 }
 
-void scan_procs(struct thread_context_t *context){
-    struct proc_info_t *p_info = context->p_proc_info;
+void scan_procs(void *offset_loc){
+    struct proc_data_t *data = (proc_data_t *)offset_loc;
     char p_dir[] = "/proc";
 
     struct dirent **dir_list;

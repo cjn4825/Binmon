@@ -33,14 +33,51 @@ typedef enum {
  *
  */
 
-void pack_data(struct thread_context_t *context, int type){
-    pthread_mutex_lock(&context->pack_lock);
+void pack_data(void* start_offset, int num_elements){
 
-    struct tlv_t t;
-    size_t tlv_size = 0;
-    size_t total_tlv_size = 0;
-    //          pass in type also like other ones
-    char *offset = &context->header_buf[sizeof(struct packet_header)];
+    // no need to pack data???
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    // notes: this is called per process so 14 or so fields in total
+    // implement just for proc data for now?
+    for(int i = 0; i < num_elements; i++){
+
+        // the struct of data will be set at the location needed
+        // could manually loop by type? such as i know 3 u32 ints are first so loop by that amount then continue
+        start_offset[tlv_offset] = //somehow get type by index;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     for(size_t i = 0; i < context->p_proc_info->proc_count; i++){
         t.tag = EXE_PATH;
@@ -165,11 +202,5 @@ void pack_data(struct thread_context_t *context, int type){
         // this might be a little faster since i keep adding within here
         // until the end instead of multiple times
         context->p_proc_info->total_tlv_size = total_tlv_size;
-
-        // for binaries set the is_active bit to 0 to determine
-        // if its a binary... and set pid to 0..which will happen
-        // automatically with memset to zero or calloc
     }
-
-    pthread_mutex_unlock(&context->pack_lock);
 }

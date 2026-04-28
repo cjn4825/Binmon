@@ -1,3 +1,5 @@
+#include <signal.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -80,7 +82,7 @@ void* create_bin_thread(void *context_arg){
 
     return NULL;
 }
-
+// goal is to add proces values as fast as possible to the pool
 void* create_proc_thread(void *context_arg){
     proc_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
@@ -88,32 +90,35 @@ void* create_proc_thread(void *context_arg){
     // cpu_set_t cpuset;
     // do cpu core pinning here?
 
-
-    // create arean
     struct Arena *const arena_proc = create_arena();
     alloc_arena(arena_proc, g_proc_pool_size);
 
-    // context->proc_data_buf = create_databuf(context->p_proc_info); // no data buf needed?
-    // context->proc_header_buf = create_headerbuf(context->p_proc_info); // header should be added also?
-
     // put arena for proc and data in context and remove other data
     // don't need data buf i think?
-    size_t offset_total = sizeof(struct packet_header) + sizeof(struct proc_data_t);
-    size_t offset_to_data = sizeof(struct packet_header);
+    // //make sig_atomic_t offset???
+    sig_atomic_t offset = sizeof(struct proc_data_t);
 
     while(exit_flag == 0){
         // maybe get rid of proc_info_t? and have the proc pool only have data + flags
         void* proc_data_loc = &arena_proc->pool[arena_proc->offset];
-        void* proc_header_loc = &arena_proc->pool[arena_proc->offset];
-        scan_procs(proc_data_loc);
-        // set header? ...set after data to get size of tlv data?
-        // how to transfer data to tlv? memcpy?
-        // pack_data(proc_loc);
-        // pack_header(proc_loc);                   // these will be in another thread
-        // send_packet(proc_loc, PROC);
-        // clean(proc_loc, PROC); // don't need to clean anymore?
-        //add offset then add proc_loc by that offset
-        arena_proc->offset += offset_total;
+//TODO:// change scan procs to scan for only one process at a time and set data at
+        // the curent offset location...
+        scan_procs(proc_data_loc); // at this point the data is set at the location
+                                   // AND in tlv form
+                                   // break up to different function to set data?
+
+        arena_proc->offset += offset;
+
+
+        // pack_data(proc_data_loc); // use proc_data_loc...dont need to pack data???
+        // pack_header(context, proc_header_loc); // don't need to back header?
+        //
+        // need to set packet data through
+        // set_header();
+        // this returns the previoud value after adding the offset to it?
+        // void* proc_block = atomic_fetch_add(proc_header_loc, offset_total);
+        // this block pointer then gets pushed to the ring buffer
+
         sleep(g_delta_program);
     }
 
