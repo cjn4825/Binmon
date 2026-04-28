@@ -3,16 +3,17 @@
 
 #include <stdint.h>
 
-struct __attribute__((packed)) packet_header {
+struct packet_header {
 
     uint32_t magic_number;              // so client knows its this data
     uint32_t payload_length;            // length whole buffer
     uint32_t sequence;                  // order of the packet
     uint32_t crc;                       // checksum value for packet
     uint16_t version;                   // protocol version
-};
 
-struct __attribute__((packed)) tlv_t{
+} __attribute__((packed));
+
+struct tlv_t {
 
     uint8_t tag;                        // what the data is like pid or comm or last_access...
     uint16_t length;                    // length of data
@@ -24,6 +25,6 @@ struct __attribute__((packed)) tlv_t{
         uint8_t  u8;                    // for flags/state byte
     } value;
 
-};
+} __attribute__((packed));
 
 #endif // !PROTOCOL_H

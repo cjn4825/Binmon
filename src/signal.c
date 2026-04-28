@@ -2,7 +2,7 @@
 #include "../include/signal.h"
 #include <signal.h>
 
-extern volatile sig_atomic_t exit_flag;
+extern sig_atomic_t exit_flag;
 
 void handle_sigint(int sig){
     while(g_finished != 1){

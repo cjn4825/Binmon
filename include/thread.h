@@ -25,13 +25,12 @@ struct thread_context_t {
     char *proc_data_buf;
     char *bin_data_buf;
 };
-// volatile tells the compiler that these might change at anytime..
-// atomic acts like a lower level way/fast way to mutex the values in a way...
-extern volatile sig_atomic_t exit_flag;
-extern volatile sig_atomic_t beat_status;
-extern volatile sig_atomic_t send_status;
-extern volatile sig_atomic_t bin_status;
-extern volatile sig_atomic_t proc_status;
+
+extern sig_atomic_t exit_flag;
+extern sig_atomic_t beat_status;
+extern sig_atomic_t send_status;
+extern sig_atomic_t bin_status;
+extern sig_atomic_t proc_status;
 
 void* create_beat_thread(void *context_arg);
 void* create_healthbeat_thread(void *context_arg);

@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <sched.h>
 #include <stdlib.h>
 
 #include "../include/arena.h"
@@ -55,9 +56,14 @@ int main(void){
     // move these to somewhere else???
     struct thread_context_t *const thread_context = calloc(1, sizeof(struct thread_context_t));
     init_context(thread_context);
+    // test for core pinning threads
+    // cpu_set_t cpuset;
+    // CPU_ZERO(&cpuset);
+    // CPU_SET(1,&cpuset);
+    // int pin = pthread_setaffinity_np();
 
     pthread_t proc_thread, bin_thread, send_data_thread, heart_beat_thread, health_check_thread;
-
+    // need to check if any creations failed...
     pthread_create(&bin_thread, NULL, create_proc_thread, thread_context);
     pthread_create(&proc_thread, NULL, create_bin_thread, thread_context);
     pthread_create(&send_data_thread, NULL, create_send_thread, thread_context);

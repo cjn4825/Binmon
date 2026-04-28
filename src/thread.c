@@ -7,10 +7,11 @@
 #include "../include/create_buffer.h"
 #include "../include/settings.h"
 #include "../include/proctypes.h"
+#include "../include/protocol.h"
 #include "../include/utils.h"
 #include "../include/server_connect.h"
 
-volatile sig_atomic_t exit_flag = 0;
+sig_atomic_t exit_flag = 0;
 int g_finished = 0;
 
 void* create_beat_thread(void *context_arg){
@@ -81,36 +82,38 @@ void* create_bin_thread(void *context_arg){
 }
 
 void* create_proc_thread(void *context_arg){
-    // do core pinning here?
-    //
-    //
     proc_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
+
+    // cpu_set_t cpuset;
+    // do cpu core pinning here?
 
 
     // create arean
     struct Arena *const arena_proc = create_arena();
     alloc_arena(arena_proc, g_proc_pool_size);
 
-    // context->p_proc_info = create_info();
-    // context->proc_data_buf = create_databuf(context->p_proc_info);
-    // context->proc_header_buf = create_headerbuf(context->p_proc_info);
+    // context->proc_data_buf = create_databuf(context->p_proc_info); // no data buf needed?
+    // context->proc_header_buf = create_headerbuf(context->p_proc_info); // header should be added also?
 
     // put arena for proc and data in context and remove other data
-    // need to create databuf and headerbuf too
-    size_t offset = sizeof(struct proc_info_t) +
-                    sizeof(struct proc_data_t) +
-                    sizeof(struct proc_flags_t);
+    // don't need data buf i think?
+    size_t offset_total = sizeof(struct packet_header) + sizeof(struct proc_data_t);
+    size_t offset_to_data = sizeof(struct packet_header);
 
     while(exit_flag == 0){
-        void* proc_loc = &arena_proc->pool[arena_proc->offset];
-        scan_procs(proc_loc);
+        // maybe get rid of proc_info_t? and have the proc pool only have data + flags
+        void* proc_data_loc = &arena_proc->pool[arena_proc->offset];
+        void* proc_header_loc = &arena_proc->pool[arena_proc->offset];
+        scan_procs(proc_data_loc);
+        // set header? ...set after data to get size of tlv data?
+        // how to transfer data to tlv? memcpy?
         // pack_data(proc_loc);
         // pack_header(proc_loc);                   // these will be in another thread
         // send_packet(proc_loc, PROC);
         // clean(proc_loc, PROC); // don't need to clean anymore?
         //add offset then add proc_loc by that offset
-        arena_proc->offset += offset;
+        arena_proc->offset += offset_total;
         sleep(g_delta_program);
     }
 
