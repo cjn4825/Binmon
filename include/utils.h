@@ -5,6 +5,15 @@
 #include "thread.h"
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
+// create thread in main without having error checking
+#define CREATE_THREAD(thread, function)                                     \
+    do {                                                                    \
+        if(pthread_create(&thread, NULL, function, thread_context) != 0) {  \
+            LOG("Error when creating thread: ", thread);                    \
+            exit(EXIT_FAILURE);                                             \
+        }                                                                   \
+    } while(0)                                                              \
+
 #include <sys/types.h>
 
 void get_log_time(char *buffer, size_t length);

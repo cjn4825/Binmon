@@ -9,18 +9,7 @@
 
 // int settings[SETTINGS_COUNT] = {0};
 
-int g_log_value;
-int g_port;
-int g_delta_program;
-int g_proc_pool_size;
-int g_resize_percentage;
-int g_default_old;
-int g_default_max;
-int g_stats_length;
-int g_bin_scan_time;
-int g_health_scan_time;
-int g_beat_scan_time;
-const char *g_server_address;
+struct Config *const config;
 
 void get_log_time(char *buffer, size_t length){
     time_t now = time(NULL);
@@ -28,41 +17,41 @@ void get_log_time(char *buffer, size_t length){
     strftime(buffer, length, "%H:%M:%S", t);
 }
 
-void clean(struct thread_context_t *const context, int type){
+// void clean(struct thread_context_t *const context, int type){
 
-    if(type == PROC){
-        free(context->p_proc_info->data);
-        free(context->p_proc_info);
-        context->p_proc_info->total_tlv_size = 0;
-        context->p_proc_info->total_ph_size = 0;
-    }
-    else if (type == BIN){
-        free(context->p_bin_info->data);
-        free(context->p_bin_info);
-        context->p_bin_info->total_tlv_size = 0;
-        context->p_bin_info->total_ph_size = 0;
-    }
-    else {
-        LOG("Passed wrong type into clean");
-        exit(EXIT_FAILURE);
-    }
-}
+//     if(type == PROC){
+//         free(context->p_proc_info->data);
+//         free(context->p_proc_info);
+//         context->p_proc_info->total_tlv_size = 0;
+//         context->p_proc_info->total_ph_size = 0;
+//     }
+//     else if (type == BIN){
+//         free(context->p_bin_info->data);
+//         free(context->p_bin_info);
+//         context->p_bin_info->total_tlv_size = 0;
+//         context->p_bin_info->total_ph_size = 0;
+//     }
+//     else {
+//         LOG("Passed wrong type into clean");
+//         exit(EXIT_FAILURE);
+//     }
+// }
 
-void check_capacity(struct proc_info_t *const p_info){
-    if(p_info->proc_count >= p_info->capacity * g_resize_percentage){
-        size_t new_cap = p_info->capacity *= 2;
+// void check_capacity(struct proc_info_t *const p_info){
+//     if(p_info->proc_count >= p_info->capacity * g_resize_percentage){
+//         size_t new_cap = p_info->capacity *= 2;
 
-        p_info->data = realloc(p_info->data, new_cap);
+//         p_info->data = realloc(p_info->data, new_cap);
 
-        if(unlikely(p_info->data == NULL)){
-            LOG("Data failed to resize from realloc");
-            exit(EXIT_FAILURE);
-        }
+//         if(unlikely(p_info->data == NULL)){
+//             LOG("Data failed to resize from realloc");
+//             exit(EXIT_FAILURE);
+//         }
 
-        p_info->capacity = new_cap;
+//         p_info->capacity = new_cap;
 
-    }
-}
+//     }
+// }
 
 void import_settings(const char *const path){
     FILE *p_file = fopen(path, "r");
@@ -95,40 +84,40 @@ void import_settings(const char *const path){
             //set variables
             switch (i) {
                 case 0:
-                    g_log_value = *value;
+                    g_log_value = *value; // change to be part of config?
                     break;
                 case 1:
-                    g_port = *value;
+                    config->g_port = *value;
                     break;
                 case 2:
-                    g_server_address = (const char*)value;
+                    config->g_server_address = (const char*)value;
                     break;
                 case 3:
-                    g_proc_pool_size = *value;
+                    config->g_proc_pool_size = *value;
                     break;
                 case 4:
-                    g_delta_program = *value;
+                    config->g_delta_program = *value;
                     break;
                 case 5:
-                    g_resize_percentage = *value / 100;
+                    config->g_resize_percentage = *value / 100;
                     break;
                 case 6:
-                    g_default_old = *value;
+                    config->g_default_old = *value;
                     break;
                 case 7:
-                    g_default_max = *value;
+                    config->g_default_max = *value;
                     break;
                 case 8:
-                    g_stats_length = *value;
+                    config->g_stats_length = *value;
                     break;
                 case 9:
-                    g_bin_scan_time = *value;
+                    config->g_bin_scan_time = *value;
                     break;
                 case 10:
-                    g_health_scan_time = *value;
+                    config->g_health_scan_time = *value;
                     break;
                 case 11:
-                    g_beat_scan_time = *value;
+                    config->g_beat_scan_time = *value;
                     break;
             }
         }

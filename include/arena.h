@@ -3,7 +3,7 @@
 
 #include <unistd.h>
 
-#define INIT_ARENA_SIZE 50000 // 50MB in bytes
+#define INIT_ARENA_SIZE 50000 // 50KB in bytes
 
 // notes:
 // beat thread: 1 page    malloc
@@ -16,17 +16,10 @@
 // bin and ring buffer
 
 struct Arena {
-  size_t offset;
   size_t capacity;
-  void *pool;
+  size_t offset;
+  void *restrict pool; // why does this not work?
 };
-
-// notes:
-//
-// have one for each thread
-// first need to figure out architecture
-// only deallocate by deleting the whole thing
-// after each run?
 
 struct Arena *create_arena(void);
 void *alloc_arena(struct Arena *arena, size_t size);

@@ -3,11 +3,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#include "../include/proctypes.h"
 #include "../include/logging.h"
 #include "../include/settings.h"
 
-static void craw_bins(struct proc_info_t *const p_info, const char *bin_path){
+static void craw_bins(struct proc_bin_t *const p_info, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
     // to find binaries
     //
@@ -77,7 +76,7 @@ static void craw_bins(struct proc_info_t *const p_info, const char *bin_path){
     closedir(p_bin_dir);
 }
 
-void update_bins(struct thread_context_t *context){
+void scan_bins(struct thread_context_t *context){
     struct proc_info_t *const p_info = context->p_bin_info;
 
     const char *locations[] = {

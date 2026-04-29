@@ -2,10 +2,8 @@
 #include "../include/signal.h"
 #include <signal.h>
 
-extern sig_atomic_t exit_flag;
+sig_atomic_t exit_flag = 0;
 
 void handle_sigint(int sig){
-    while(g_finished != 1){
-        exit_flag = 1;
-    }
+    exit_flag = 1;
 }

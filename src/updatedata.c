@@ -12,23 +12,38 @@
 
 static int extract_data(char *source_location, int length){
     int result = 0;
-    for(int i = 0; i < length; i++){
+    for(size_t i = 0; i < length; i++){
         char c = source_location[i];
         result = result * 10 + (c - '0');
     }
 
     return result;
 }
-
 static void update_stats(
     struct proc_data_t *data,
     char *p_stats,
     char *exe,
-    struct stat *file_stats,
-    int proc_index
+    struct stat *file_stats
 ){
 
     typedef enum {
+        PID_TYPE,
+        COMM_TYPE,
+        STATE_TYPE,
+        PPID_TYPE,
+        CPU_TYPE,
+        MEM_TYPE,
+        START_TYPE,
+        FILE_SIZE_TYPE,
+        EXE_TYPE,
+        FLAGS_TYPE,
+        ACCESS_TYPE,
+        MODIFIED_TYPE,
+        STATUS_TYPE
+
+    } tlv_type;
+
+    typedef enum { // this is for placement...but i could also use it for the type in tlv?
         PID = 1,
         COMM = 2,
         STATE = 3,
@@ -36,7 +51,7 @@ static void update_stats(
         CPU_U = 14,
         CPU_S = 15,
         START = 22
-    } stat_locations __attribute__((unused));
+    } stat_location;
 
     double uptime = 0;
     int left_index = 0;
@@ -55,33 +70,61 @@ static void update_stats(
         char *right_location = &p_stats[right_index];
 
         if(*right_location == ' '){
+
             int sub_length = right_index - left_index;
             char *source_location = &p_stats[left_index];
-            //fix
-            if(data->flags_table.v.not_missing == 0){
 
+            if(data->flags_table.v.not_missing == 0){
                 switch (stat_value_place) {
                     case PID:
+                        data->pid.t = PID_TYPE;
+                        data->pid.l = sizeof(data->pid.v);
                         data->pid.v = extract_data(source_location, sub_length);
                         break;
                     case COMM:
-                        memcpy(&data->comm.v, source_location, sub_length);
-                        data->comm[sub_length] = '\0';
-                        // set lenght
+                        data->comm.t = COMM_TYPE;
                         data->comm.l = sizeof(data->comm.v);
+                        memcpy(&data->comm.v, source_location, sub_length);
+                        data->comm.v[sub_length] = '\0';
                         break;
                     case PPID:
-                        data->ppid = extract_data(source_location, sub_length);
+                        data->ppid.t = PPID_TYPE;
+                        data->ppid.v = extract_data(source_location, sub_length);
+                        data->ppid.l = sizeof(data->ppid.v);
                         break;
                     case START:
-                        data->first_seen = extract_data(source_location, sub_length);
+                        // first seen too?
+                        data->start_time.t = START_TYPE;
+                        data->start_time.v = extract_data(source_location, sub_length);
+                        data->start_time.l = sizeof(data->start_time.v);
                         break;
                 }
 
-                // values that need to be set once
-                data->exe_path = exe;
-                data->file_size = file_stats->st_size;
-                data->flags_table.not_missing = 1;
+                // values that need to be set once.. looks ugly i think
+                data->exe_path.t = EXE_TYPE;
+                data->exe_path.l = sizeof(data->exe_path.v);
+                memcpy(&data->exe_path.v, exe, sizeof(data->exe_path.v));
+
+                data->file_size.t = FILE_SIZE_TYPE;
+                data->file_size.l = sizeof(data->file_size.v);
+                data->file_size.v = file_stats->st_size;
+
+                data->cpu_usage.t = CPU_TYPE;
+                data->cpu_usage.l = sizeof(data->cpu_usage.v);
+
+                data->mem_usage.t = MEM_TYPE;
+                data->mem_usage.l = sizeof(data->mem_usage.v);
+
+                data->last_access.t = ACCESS_TYPE;
+                data->last_access.l = sizeof(data->last_access.v);
+
+                data->last_modified.t = MODIFIED_TYPE;
+                data->last_modified.l = sizeof(data->last_modified.v);
+
+                data->last_status.t = STATUS_TYPE;
+                data->last_status.l = sizeof(data->last_status.v);
+
+                data->flags_table.v.not_missing = 1;
             }
 
             // values that need to be updated no matter what
@@ -89,29 +132,28 @@ static void update_stats(
                 case STATE:
                     // can't copy directly due to how the compiler
                     // works with bitfields
+                    data->flags_table.t = FLAGS_TYPE;
+                    data->flags_table.l = sizeof(data->flags_table.v);
                     memcpy(&temp_state, source_location, sub_length);
-                    data->flags_table.state = temp_state;
+                    data->flags_table.v.state = temp_state;
                     break;
                 case CPU_U:
-                    // memcpy(&cpu_u, source_location, sub_length);
+                    // cpu_u and cpu_s are used later to calculate cpu_usage
                     cpu_u = extract_data(source_location, sub_length);
                     break;
                 case CPU_S:
-                    // memcpy(&cpu_s, source_location, sub_length);
                     cpu_s = extract_data(source_location, sub_length);
                     break;
                 case START:
 
-                    if(data->start_time == 0){
-                        data->start_time = extract_data(source_location, sub_length);
-                        // memcpy(&data->start_time, source_location, sub_length);
+                    if(data->start_time.v == 0){
+                        data->start_time.v = extract_data(source_location, sub_length);
                     }
 
                     break;
             }
 
             // cpu usage calculation
-
             FILE *p_file = fopen("/proc/uptime", "r");
 
             if (unlikely(p_file == NULL)) {
@@ -132,11 +174,11 @@ static void update_stats(
             double seconds = uptime - (start_time / (double)hertz);
             double cpu_usage = 100.0 * (total_time / seconds);
 
-            data->cpu_usage = cpu_usage;
+            data->cpu_usage.v = cpu_usage;
 
             // mem usage calculation
             char file[32];
-            snprintf(file, sizeof(file),"/proc/%c/smaps_rollup", data->pid);
+            snprintf(file, sizeof(file),"/proc/%c/smaps_rollup", data->pid.v);
 
             p_file = fopen(file, "r");
 
@@ -158,8 +200,7 @@ static void update_stats(
 
                     int total_length = right_digit - left_digit;
 
-                    // memcpy(&data->mem_usage, &file[left_digit], total_length);
-                    data->mem_usage = extract_data(&file[left_digit], total_length);
+                    data->mem_usage.v = extract_data(&file[left_digit], total_length);
                 }
             }
 
@@ -167,16 +208,13 @@ static void update_stats(
 
             // reading from file_stats from executible section
             // needs to be updated each time
-            data->last_access = file_stats->st_atim.tv_sec;
-            data->last_modified = file_stats->st_mtim.tv_sec;
-            data->last_status = file_stats->st_ctim.tv_sec;
+            data->last_access.v = file_stats->st_atim.tv_sec;
+            data->last_modified.v = file_stats->st_mtim.tv_sec;
+            data->last_status.v = file_stats->st_ctim.tv_sec;
 
             //only set if its not old yet
-            //
-            //will remove later to decrease cpu usage
-            //since this can be done on the client side
-            if(data->last_access >= g_default_old){
-                data->flags_table.is_old = 1;
+            if(data->last_access.v >= g_default_old){
+                data->flags_table.v.is_old = 1;
             }
 
             stat_value_place++;
@@ -188,21 +226,20 @@ static void update_stats(
 
     }
 }
-// index is the location in the main struct that the info should be updated
-// if not there then it should be at the very end?
-static int find_pid_index(struct proc_info_t *p_info, pid_t pid){
-    for(size_t i = 0; i < p_info->proc_count; i++){
-        if(p_info->data[i].pid == pid){
-            return i;
-        }
-    }
 
-    check_capacity(p_info);
+// static int find_pid_index(struct proc_info_t *p_info, pid_t pid){
+//     for(size_t i = 0; i < p_info->proc_count; i++){
+//         if(p_info->data[i].pid == pid){
+//             return i;
+//         }
+//     }
 
-    u_int32_t proc_next_index = p_info->proc_count;
-    p_info->proc_count++;
-    return proc_next_index;
-}
+//     check_capacity(p_info);
+
+//     u_int32_t proc_next_index = p_info->proc_count;
+//     p_info->proc_count++;
+//     return proc_next_index;
+// }
 
 static char *get_symlink_path(int pid){
 
@@ -247,7 +284,7 @@ int dir_filter(const struct dirent *dir){
 }
 
 void scan_procs(void *offset_loc){
-    struct proc_data_t *data = (proc_data_t *)offset_loc;
+    struct proc_data_t *data = (struct proc_data_t *)offset_loc;
     char p_dir[] = "/proc";
 
     struct dirent **dir_list;
@@ -261,7 +298,6 @@ void scan_procs(void *offset_loc){
     for(size_t i = 0; i < dir_num; i++) {
         if(dir_list[i] != NULL){
             int pid = atoi(dir_list[i]->d_name);
-            int index = find_pid_index(p_info, pid);
 
             char path[PATH_MAX];
             snprintf(path, sizeof(path), "/proc/%d/stat", pid);
@@ -279,7 +315,7 @@ void scan_procs(void *offset_loc){
             }
 
             if(fgets(p_stats, sizeof(p_stats) , p_file) && stat(p_exe, file_stats) == 0){
-                update_stats(p_info, p_stats, p_exe, file_stats, index);
+                update_stats(data, p_stats, p_exe, file_stats);
             }
             else {
                 LOG("could not get info");
