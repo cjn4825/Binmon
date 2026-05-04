@@ -8,17 +8,13 @@
 #include "../include/thread.h"
 
 //TODO:
-//
-// // start on other producer and consumer pool
+// // replace error checks with marco
 // // switch to timer_fd create instead of sleep
-// // fix main
 //
 //log telemtry such as packet count...data size ect...
-//cpu pinning with threads and thread affinity
 //alignas for thread structs
 //simd and vectorization
 //ring buffer...use af_xdp
-//make logging var in logging.h
 //make yaml keys not dependent on order
 //max out to 50 mb of memory usage then exit safely similar with cpu usage...
 //

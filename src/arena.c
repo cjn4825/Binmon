@@ -27,10 +27,11 @@ struct Arena* create_arena(void){
         0
     );
 
-    if(unlikely(a == NULL)){
-        LOG("could not mmap Arena");
-        exit(EXIT_FAILURE);
-    }
+    ERROR(unlikely(a == NULL), "could not mmap Arena"); // fix to allow expression
+    // if(unlikely(a == NULL)){
+    //     LOG("could not mmap Arena");
+    //     exit(EXIT_FAILURE);
+    // }
 
     a->pool = p;
     a->capacity = INIT_ARENA_SIZE;

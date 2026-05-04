@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
@@ -5,7 +6,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define _GNU_SOURCE
 #include "../include/logging.h"
 #include "../include/thread.h"
 #include "../include/arena.h"
@@ -71,7 +71,7 @@ void* create_send_thread(void *context_arg){
 }
 
 void* create_bin_thread(void *context_arg){
-
+    // could put in yaml file?
     pin_thread(1, pthread_self());
 
     bin_status = 1;
