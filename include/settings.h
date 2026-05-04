@@ -26,6 +26,7 @@ struct Config {
     int g_delta_program;
     int g_resize_percentage;
     int g_proc_pool_size;
+    int g_bin_pool_size;
     int g_default_old;
     int g_default_max;
     int g_stats_length;

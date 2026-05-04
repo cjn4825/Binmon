@@ -18,7 +18,7 @@
 struct Arena {
   size_t capacity;
   size_t offset;
-  void *restrict pool; // why does this not work?
+  void *pool; // could use restrict but does not work for some reason
 };
 
 struct Arena *create_arena(void);

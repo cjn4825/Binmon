@@ -5,8 +5,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "../include/proctypes.h"
+#include "../include/protocol.h"
 #include "../include/logging.h"
 #include "../include/settings.h"
 
@@ -25,23 +27,6 @@ static void update_stats(
     char *exe,
     struct stat *file_stats
 ){
-
-    typedef enum {
-        PID_TYPE,
-        COMM_TYPE,
-        STATE_TYPE,
-        PPID_TYPE,
-        CPU_TYPE,
-        MEM_TYPE,
-        START_TYPE,
-        FILE_SIZE_TYPE,
-        EXE_TYPE,
-        FLAGS_TYPE,
-        ACCESS_TYPE,
-        MODIFIED_TYPE,
-        STATUS_TYPE
-
-    } tlv_type;
 
     typedef enum { // this is for placement...but i could also use it for the type in tlv?
         PID = 1,
@@ -74,7 +59,7 @@ static void update_stats(
             int sub_length = right_index - left_index;
             char *source_location = &p_stats[left_index];
 
-            if(data->flags_table.v.not_missing == 0){
+            if(data->proc_flags.v.not_missing == 0){
                 switch (stat_value_place) {
                     case PID:
                         data->pid.t = PID_TYPE;
@@ -83,9 +68,10 @@ static void update_stats(
                         break;
                     case COMM:
                         data->comm.t = COMM_TYPE;
-                        data->comm.l = sizeof(data->comm.v);
+                        data->comm.l = strlen(data->comm.v);
                         memcpy(&data->comm.v, source_location, sub_length);
-                        data->comm.v[sub_length] = '\0';
+                        // data->comm.v[sub_length] = '\0';
+                        // don't need null terminator with length
                         break;
                     case PPID:
                         data->ppid.t = PPID_TYPE;
@@ -102,8 +88,8 @@ static void update_stats(
 
                 // values that need to be set once.. looks ugly i think
                 data->exe_path.t = EXE_TYPE;
-                data->exe_path.l = sizeof(data->exe_path.v);
-                memcpy(&data->exe_path.v, exe, sizeof(data->exe_path.v));
+                data->exe_path.l = strlen(data->exe_path.v);
+                memcpy(&data->exe_path.v, exe, strlen(data->exe_path.v));
 
                 data->file_size.t = FILE_SIZE_TYPE;
                 data->file_size.l = sizeof(data->file_size.v);
@@ -124,7 +110,7 @@ static void update_stats(
                 data->last_status.t = STATUS_TYPE;
                 data->last_status.l = sizeof(data->last_status.v);
 
-                data->flags_table.v.not_missing = 1;
+                data->proc_flags.v.not_missing = 1;
             }
 
             // values that need to be updated no matter what
@@ -132,10 +118,10 @@ static void update_stats(
                 case STATE:
                     // can't copy directly due to how the compiler
                     // works with bitfields
-                    data->flags_table.t = FLAGS_TYPE;
-                    data->flags_table.l = sizeof(data->flags_table.v);
+                    data->proc_flags.t = FLAGS_TYPE;
+                    data->proc_flags.l = sizeof(data->proc_flags.v);
                     memcpy(&temp_state, source_location, sub_length);
-                    data->flags_table.v.state = temp_state;
+                    data->proc_flags.v.state = temp_state;
                     break;
                 case CPU_U:
                     // cpu_u and cpu_s are used later to calculate cpu_usage
@@ -212,9 +198,8 @@ static void update_stats(
             data->last_modified.v = file_stats->st_mtim.tv_sec;
             data->last_status.v = file_stats->st_ctim.tv_sec;
 
-            //only set if its not old yet
-            if(data->last_access.v >= g_default_old){
-                data->flags_table.v.is_old = 1;
+            if(data->last_access.v >= config->g_default_old){
+                data->proc_flags.v.is_old = 1;
             }
 
             stat_value_place++;
@@ -226,20 +211,6 @@ static void update_stats(
 
     }
 }
-
-// static int find_pid_index(struct proc_info_t *p_info, pid_t pid){
-//     for(size_t i = 0; i < p_info->proc_count; i++){
-//         if(p_info->data[i].pid == pid){
-//             return i;
-//         }
-//     }
-
-//     check_capacity(p_info);
-
-//     u_int32_t proc_next_index = p_info->proc_count;
-//     p_info->proc_count++;
-//     return proc_next_index;
-// }
 
 static char *get_symlink_path(int pid){
 
@@ -254,13 +225,13 @@ static char *get_symlink_path(int pid){
     }
 
     ssize_t link_length = readlink(path, exe, sizeof(exe) - 1);
+    assert(link_length == strlen(exe)); // try to find other places to put assert and fix this one
 
     if(unlikely(link_length == -1)){
         LOG("symlink could not be found");
         exit(EXIT_FAILURE);
     }
 
-    exe[link_length] = '\0';
     char *symlink = calloc(1, link_length + 1);
 
     if(unlikely(symlink == NULL)){

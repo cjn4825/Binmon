@@ -4,8 +4,7 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 
-#include "../include/proctypes.h"
-
+#include "../include/protocol.h"
 
 static inline void create_frame(void *ether_loc){
     // set mac address by grabbing it from host...for now hardcode an example
@@ -45,7 +44,6 @@ static inline void create_packet(void *pack_loc){
 void* create_binmon_header(void *header_loc){
     struct packet_header *ph = (struct packet_header*)header_loc;
 
-    // should set this once not here
     ph->magic_number = MAGIC_NUMBER;
     ph->packet_type = PACKET_TYPE;
     ph->time_stamp = // helper funtion in utils to get time
@@ -54,8 +52,6 @@ void* create_binmon_header(void *header_loc){
     ph->sequence++; // do i need this either? am i using udp or tcp?
     ph->crc = 0; //temp not sure if i need this here or within the actual headers
     ph->version = VERSION;
-
-
 
     return 0;
 }

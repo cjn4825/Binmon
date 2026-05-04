@@ -1,16 +1,31 @@
+#include <pthread.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#define _GNU_SOURCE
 #include "../include/logging.h"
 #include "../include/thread.h"
 #include "../include/arena.h"
 #include "../include/create_headers.h"
 #include "../include/settings.h"
 #include "../include/proctypes.h"
+#include "../include/bintypes.h"
 #include "../include/utils.h"
 #include "../include/server_connect.h"
+
+void pin_thread(int core, pthread_t thread){
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(core, &cpuset);
+
+    if(pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset) != 0){
+        LOG("error setting pinning affinity");
+        exit(EXIT_FAILURE);
+    }
+}
 
 void* create_beat_thread(void *context_arg){
     beat_status = 1;
@@ -56,23 +71,29 @@ void* create_send_thread(void *context_arg){
 }
 
 void* create_bin_thread(void *context_arg){
-    // do core pinning here?
-    //
-    //
+
+    pin_thread(1, pthread_self());
+
     bin_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
-    // context->p_bin_info = create_info();
 
-    // context->bin_data_buf = create_databuf(context->p_bin_info);
-    // context->bin_header_buf = create_headerbuf(context->p_bin_info);
+    struct Arena *const arena_bin = create_arena();
+    alloc_arena(arena_bin, config->g_bin_pool_size);
+
+    void* start_loc = create_headers(&arena_bin->pool);
+
+    arena_bin->offset = sizeof(start_loc);
+
+    size_t header_offset = sizeof(struct packet_header);
 
     while(exit_flag == 0){
-        // update_bins(context);
-        // pack_data(context);
-        // pack_header(context);
-        // send_packet(context, BIN);
-        // clean(context, BIN);
+        void* bin_data_loc = &arena_bin->pool[arena_bin->offset + header_offset];
+        scan_bins(bin_data_loc); // fix to just take in base pointer
 
+        // should we mutex this???
+        create_binmon_header(&arena_bin->offset - header_offset); // see if right?
+
+        // switch to better time one
         sleep(config->g_bin_scan_time);
     }
 
@@ -80,20 +101,19 @@ void* create_bin_thread(void *context_arg){
 }
 // goal is to add proces values as fast as possible to the pool
 void* create_proc_thread(void *context_arg){
+    pin_thread(2, pthread_self());
     proc_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
 
-    // cpu_set_t cpuset;
+    // cpu_set_t cpuset;             create helper function for this
     // do cpu core pinning here?
 
     struct Arena *const arena_proc = create_arena();
     alloc_arena(arena_proc, config->g_proc_pool_size);
 
+    void* start_loc = create_headers(&arena_proc->pool);
 
-    void* p_offset = create_headers(&arena_proc->pool[0]);
-
-    size_t start_loc = (size_t)((uintptr_t)arena_proc->pool + (uintptr_t)p_offset);
-    arena_proc->offset = start_loc;
+    arena_proc->offset = sizeof(start_loc);
 
     size_t header_offset = sizeof(struct packet_header);
     size_t next_proc_offset = header_offset + sizeof(struct proc_data_t);
@@ -102,11 +122,10 @@ void* create_proc_thread(void *context_arg){
         void* proc_data_loc = &arena_proc->pool[arena_proc->offset + header_offset];
 
         scan_procs(proc_data_loc);
-        // make sure to make space for the binmon header before
-
 
         create_binmon_header(&arena_proc->offset - header_offset);
-
+        // adjust total size atomic value in main header...then just reset it
+        // once done
 
         arena_proc->offset += next_proc_offset;
 

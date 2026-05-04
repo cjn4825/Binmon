@@ -3,20 +3,7 @@
 
 #include <stdint.h>
 
-#define MAGIC_NUMBER 0xDEEBB1F         // magic number so client knows
-#define VERSION 1.0                    // program version
-
-struct packet_header {
-
-    uint32_t magic_number;              // so client knows its this data
-    uint32_t packet_type;               // type of packet...make macros for different ones...
-    uint32_t time_stamp;                // not sure if this goes here???
-    uint32_t payload_length;            // length whole buffer
-    uint32_t sequence;                  // order of the packet
-    uint32_t crc;                       // checksum value for packet
-    uint16_t version;                   // protocol version
-
-} __attribute__((packed));
+#include "../include/protocol.h"
 
 struct proc_flags_t {
     // think of more to add
@@ -26,15 +13,12 @@ struct proc_flags_t {
 
 } __attribute__((packed));
 
-#define tlv_struct_32(name) struct { uint8_t t; uint16_t l; uint32_t v; } name
-#define tlv_struct_16(name) struct { uint8_t t; uint16_t l; uint16_t v; } name
-#define tlv_struct_char(name, size) struct {uint8_t t; uint16_t l; char v[size]; } name
-
 struct proc_data_t {
 
-    struct packet_header header; // not sure if i need to init this and flags...
+    struct packet_header header;
 
-    // find a way to change char size to optimize the size
+    // find a way to change char size to optimize the size...
+    // for now this is ok...also should split to hot and cold data for cpu cache locality
     tlv_struct_char(exe_path, 256);
     tlv_struct_char(comm, 256);
 
@@ -50,15 +34,11 @@ struct proc_data_t {
     tlv_struct_16(start_time);
     tlv_struct_16(file_size);
 
-    struct {uint8_t t; uint16_t l; struct proc_flags_t v; } flags_table;
+    struct { uint8_t t; uint16_t l; struct proc_flags_t v; } proc_flags;
 
 } __attribute__((packed));
 
-#define PACKET_TYPE 1 // temp will change when other types are added
-
 void scan_procs(void *offset_loc);
-void update_bins(struct thread_context_t *context);
-void pack_data(struct thread_context_t *context);
 void pack_header(struct thread_context_t *context, void *proc_header_loc);
 void send_packet(struct thread_context_t *context, int type);
 
