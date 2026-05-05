@@ -6,8 +6,6 @@
 #include "../include/logging.h"
 #include "../include/settings.h"
 
-// int settings[SETTINGS_COUNT] = {0};
-
 struct Config *const config;
 
 void get_log_time(char *buffer, size_t length){
@@ -21,15 +19,15 @@ void import_settings(const char *const path){
     yaml_parser_t parser;
     yaml_event_t event;
 
-    if(unlikely(!yaml_parser_initialize(&parser))){
-        LOG("could not init yaml parser...");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(
+        unlikely(!yaml_parser_initialize(&parser)),
+        "could not init yaml parser..."
+    );
 
-    if(unlikely(p_file == NULL)){
-        LOG("could not open yaml settings file...");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(
+        unlikely(p_file == NULL),
+        "could not open yaml settings file..."
+    );
 
     yaml_parser_set_input_file(&parser, p_file);
 
@@ -62,27 +60,30 @@ void import_settings(const char *const path){
                     config->g_bin_pool_size = *value;
                     break;
                 case 5:
-                    config->g_delta_program = *value;
+                    config->g_send_pool_size = *value;
                     break;
                 case 6:
-                    config->g_resize_percentage = *value / 100;
+                    config->g_delta_program = *value;
                     break;
                 case 7:
-                    config->g_default_old = *value;
+                    config->g_resize_percentage = *value / 100;
                     break;
                 case 8:
-                    config->g_default_max = *value;
+                    config->g_default_old = *value;
                     break;
                 case 9:
-                    config->g_stats_length = *value;
+                    config->g_default_max = *value;
                     break;
                 case 10:
-                    config->g_bin_scan_time = *value;
+                    config->g_stats_length = *value;
                     break;
                 case 11:
-                    config->g_health_scan_time = *value;
+                    config->g_bin_scan_time = *value;
                     break;
                 case 12:
+                    config->g_health_scan_time = *value;
+                    break;
+                case 13:
                     config->g_beat_scan_time = *value;
                     break;
             }

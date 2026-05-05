@@ -8,7 +8,6 @@
 #include "../include/thread.h"
 
 //TODO:
-// // replace error checks with marco
 // // switch to timer_fd create instead of sleep
 //
 //log telemtry such as packet count...data size ect...
@@ -31,7 +30,6 @@ int main(void){
     import_settings("../settings/settings.yml");
     set_logging();
 
-    // move these to utiles or thread.c function...?
     struct thread_context_t *const thread_context = calloc(1, sizeof(struct thread_context_t));
     init_context(thread_context);
 
@@ -44,6 +42,9 @@ int main(void){
 
     pthread_join(proc_thread, NULL);
     pthread_join(bin_thread, NULL);
+    pthread_join(send_data_thread, NULL);
+    pthread_join(heart_beat_thread, NULL);
+    pthread_join(health_check_thread, NULL);
 
     destroy_mutexes(thread_context);
     free(thread_context);

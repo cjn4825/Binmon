@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -14,10 +15,8 @@ struct Arena* create_arena(void){
 
     char* p = malloc(sizeof(struct Arena));
 
-    if(unlikely(p == NULL)){
-        LOG("could not mmap Arena pool");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(unlikely(p == NULL), "could not mmap Arena pool");
+
     struct Arena *a = mmap(
         NULL,
         mmap_size(),
@@ -27,11 +26,7 @@ struct Arena* create_arena(void){
         0
     );
 
-    ERROR(unlikely(a == NULL), "could not mmap Arena"); // fix to allow expression
-    // if(unlikely(a == NULL)){
-    //     LOG("could not mmap Arena");
-    //     exit(EXIT_FAILURE);
-    // }
+    CHECK_ERROR(unlikely(a == NULL), "could not mmap Arena");
 
     a->pool = p;
     a->capacity = INIT_ARENA_SIZE;
@@ -40,10 +35,13 @@ struct Arena* create_arena(void){
 }
 
 void* alloc_arena(struct Arena *arena, size_t size){
-    if((arena->offset + size) >= arena->capacity){
-        LOG("Arena reached capacity...");
-        exit(EXIT_FAILURE);
-    }
+
+    assert(arena->capacity > 0);
+
+    CHECK_ERROR(
+        (arena->offset + size) >= arena->capacity,
+        "Arena reached capacity"
+    );
 
     size_t original_place = arena->offset;
 

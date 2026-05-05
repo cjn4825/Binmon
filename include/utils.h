@@ -8,9 +8,9 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
 // macro for handling errors
-#define ERROR(input, message)                                               \
+#define CHECK_ERROR(input, message)                                         \
     do {                                                                    \
-       if(input != 0){                                                      \
+       if(input){                                                           \
             LOG(message);                                                   \
             exit(EXIT_FAILURE);                                             \
        }                                                                    \
@@ -19,7 +19,7 @@
 // create thread in main without having error checking
 #define CREATE_THREAD(thread, function)                                     \
     do {                                                                    \
-        ERROR(pthread_create(&thread, NULL, function, thread_context),      \
+        CHECK_ERROR(pthread_create(&thread, NULL, function, thread_context),\
               "Error when creating thread");                                \
     } while(0)                                                              \
 

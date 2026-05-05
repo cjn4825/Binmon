@@ -17,10 +17,7 @@ static void craw_bins(struct bin_data_t *data, const char *bin_path){
     struct stat stats;                  // not sure if this is right
     struct stat *file_stats = &stats;
 
-    if(unlikely(p_bin_dir == NULL)) {
-        LOG("could not read bin_path location");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(unlikely(p_bin_dir == NULL), "could not read bin_path location");
 
     while((p_info_bin = readdir(p_bin_dir)) != NULL){
 

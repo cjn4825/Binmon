@@ -28,7 +28,7 @@ static void update_stats(
     struct stat *file_stats
 ){
 
-    typedef enum { // this is for placement...but i could also use it for the type in tlv?
+    typedef enum {
         PID = 1,
         COMM = 2,
         STATE = 3,
@@ -142,18 +142,10 @@ static void update_stats(
             // cpu usage calculation
             FILE *p_file = fopen("/proc/uptime", "r");
 
-            if (unlikely(p_file == NULL)) {
-                LOG("failed to open /proc/uptime");
-                exit(EXIT_FAILURE);
-                return;
-            }
+            CHECK_ERROR(p_file == NULL, "failed to open /proc/uptime");
 
             // only want to scan the first one
-            if(fscanf(p_file, "%lf", &uptime) != 1){
-                LOG("failed to scan /proc/uptime");
-                exit(EXIT_FAILURE);
-                return;
-            }
+            CHECK_ERROR(fscanf(p_file, "%lf", &uptime) != 1, "failed to scan /proc/uptime");
 
             long hertz = sysconf(_SC_CLK_TCK);
             double total_time = (cpu_u + cpu_s) / (double)hertz;
@@ -219,25 +211,19 @@ static char *get_symlink_path(int pid){
 
     int written = snprintf(path, sizeof(path), "/proc/%d/exe", pid);
 
-    if(unlikely(written >= sizeof(path) || written < 0)){
-        LOG("pid could not be added to /proc/[c]/exe");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(
+        unlikely(written >= sizeof(path) || written < 0),
+        "pid could not be added to /proc/[c]/exe"
+    );
 
     ssize_t link_length = readlink(path, exe, sizeof(exe) - 1);
     assert(link_length == strlen(exe)); // try to find other places to put assert and fix this one
 
-    if(unlikely(link_length == -1)){
-        LOG("symlink could not be found");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(unlikely(link_length == -1), "symlink could not be found");
 
     char *symlink = calloc(1, link_length + 1);
 
-    if(unlikely(symlink == NULL)){
-        LOG("symlink could not be allocated");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(unlikely(symlink == NULL), "symlink could not be allocated");
 
     memcpy(symlink, exe, link_length);
 
@@ -261,10 +247,7 @@ void scan_procs(void *offset_loc){
     struct dirent **dir_list;
     int dir_num = scandir(p_dir, &dir_list, dir_filter, alphasort);
 
-    if(unlikely(dir_num == -1)) {
-        LOG("error using scandir");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(unlikely(dir_num == -1), "error using scandir");
 
     for(size_t i = 0; i < dir_num; i++) {
         if(dir_list[i] != NULL){
@@ -280,10 +263,7 @@ void scan_procs(void *offset_loc){
             struct stat stats;
             struct stat *file_stats = &stats;
 
-            if(unlikely(p_file == NULL)){
-                LOG("could not open /proc/[pid]/stat");
-                exit(EXIT_FAILURE);
-            }
+            CHECK_ERROR(unlikely(p_file == NULL), "could not open /proc/[pid]/stat");
 
             if(fgets(p_stats, sizeof(p_stats) , p_file) && stat(p_exe, file_stats) == 0){
                 update_stats(data, p_stats, p_exe, file_stats);

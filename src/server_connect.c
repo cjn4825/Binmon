@@ -12,14 +12,11 @@ int server_connect(void){
     int backoff = 1;
     int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if(unlikely(sock_fd < 0)){
-        LOG("socket could not be created");
-        exit(EXIT_FAILURE);
-    }
+    CHECK_ERROR(unlikely(sock_fd < 0), "socket could not be created");
 
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(g_port);
-    server_address.sin_addr.s_addr = inet_addr(g_server_address);
+    server_address.sin_port = htons(config->g_port);
+    server_address.sin_addr.s_addr = inet_addr(config->g_server_address);
 
     while(backoff <= (backoff * 5)){
         if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){

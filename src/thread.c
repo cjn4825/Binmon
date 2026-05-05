@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 #include <pthread.h>
 #include <sched.h>
-#include <signal.h>
+// #include <signal.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,6 +14,7 @@
 #include "../include/proctypes.h"
 #include "../include/bintypes.h"
 #include "../include/utils.h"
+#include "../include/send_data.h"
 #include "../include/server_connect.h"
 
 void pin_thread(int core, pthread_t thread){
@@ -54,22 +55,6 @@ void* create_healthbeat_thread(void *context_arg){
     return NULL;
 }
 
-void* create_send_thread(void *context_arg){
-    send_status = 1;
-    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
-
-    while(exit_flag == 0){
-        usleep(config->g_delta_program);
-    }
-    // this will read the shared queue buffer
-    // and use values from the tlv packets and
-    // index updates to send data
-    // then it will free the data and adjust the
-    // index
-
-    return NULL;
-}
-
 void* create_bin_thread(void *context_arg){
     // could put in yaml file?
     pin_thread(1, pthread_self());
@@ -78,7 +63,8 @@ void* create_bin_thread(void *context_arg){
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
 
     struct Arena *const arena_bin = create_arena();
-    alloc_arena(arena_bin, config->g_bin_pool_size);
+    arena_bin->capacity = sizeof(arena_bin->pool);
+    arena_bin->pool = alloc_arena(arena_bin, config->g_bin_pool_size);
 
     void* start_loc = create_headers(&arena_bin->pool);
 
@@ -89,11 +75,10 @@ void* create_bin_thread(void *context_arg){
     while(exit_flag == 0){
         void* bin_data_loc = &arena_bin->pool[arena_bin->offset + header_offset];
         scan_bins(bin_data_loc); // fix to just take in base pointer
-
-        // should we mutex this???
         create_binmon_header(&arena_bin->offset - header_offset); // see if right?
 
-        // switch to better time one
+        // push pointer to end of consumer pool
+
         sleep(config->g_bin_scan_time);
     }
 
@@ -105,11 +90,9 @@ void* create_proc_thread(void *context_arg){
     proc_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
 
-    // cpu_set_t cpuset;             create helper function for this
-    // do cpu core pinning here?
-
     struct Arena *const arena_proc = create_arena();
-    alloc_arena(arena_proc, config->g_proc_pool_size);
+    arena_proc->capacity = sizeof(arena_proc->pool);
+    arena_proc->pool = alloc_arena(arena_proc, config->g_proc_pool_size);
 
     void* start_loc = create_headers(&arena_proc->pool);
 
@@ -127,20 +110,47 @@ void* create_proc_thread(void *context_arg){
         // adjust total size atomic value in main header...then just reset it
         // once done
 
+        // push pointer to end of consumer pool
         arena_proc->offset += next_proc_offset;
+
 
         //
         // sig atomic???
         //
-        // this returns the previoud value after adding the offset to it?
-        // void* proc_block = atomic_fetch_add(proc_header_loc, offset_total);
-        // this block pointer then gets pushed to the ring buffer
 
         sleep(config->g_delta_program);
     }
 
     return NULL;
 }
+
+// used as the consumer thread
+void* create_send_thread(void *context_arg){
+    pin_thread(3, pthread_self());
+    send_status = 1;
+    struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
+
+    struct Arena *const arena_send = create_arena();
+    arena_send->capacity = sizeof(arena_send->pool);
+    arena_send->pool = alloc_arena(arena_send, config->g_send_pool_size);
+    arena_send->offset = arena_send->pool;
+    while(exit_flag == 0){
+        // have condition set that gets pushed when data is in both producers
+        // pointers get pushed from producers and put in this queue...
+        // then calls af_xdp or whatever to then push the packet
+
+        // how to determine the type???
+        void* data = get_producer_data();
+
+        // function that tell af_xdp to send the data
+        // then move offset pointer only if not less then base pointer
+
+        usleep(config->g_delta_program);
+    }
+
+    return NULL;
+}
+
 
 void init_context(struct thread_context_t *const thread_context){
 
