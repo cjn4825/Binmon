@@ -1,7 +1,10 @@
 #define _GNU_SOURCE
+#include <net/ethernet.h>
+#include <netinet/ip.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <sched.h>
-// #include <signal.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -37,7 +40,7 @@ void* create_beat_thread(void *context_arg){
     //
     while(exit_flag == 0){
         sleep(config->g_beat_scan_time);
-        send_packet(context, BEAT);
+        // send_packet(context, BEAT);
     }
 
     return NULL;
@@ -56,28 +59,34 @@ void* create_healthbeat_thread(void *context_arg){
 }
 
 void* create_bin_thread(void *context_arg){
-    // could put in yaml file?
     pin_thread(1, pthread_self());
 
     bin_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
+    // if mutexes arn't used then a context isn't needed here
 
     struct Arena *const arena_bin = create_arena();
-    arena_bin->capacity = sizeof(arena_bin->pool);
+    arena_bin->capacity = sizeof(arena_bin->pool); // change to yaml variable
     arena_bin->pool = alloc_arena(arena_bin, config->g_bin_pool_size);
 
-    void* start_loc = create_headers(&arena_bin->pool);
+    create_headers(arena_bin->pool);
+    arena_bin->offset = sizeof(struct ether_header) + sizeof(struct iphdr);
 
-    arena_bin->offset = sizeof(start_loc);
+    struct packet_header* prot = binmon_header(arena_bin->pool + arena_bin->offset);
+    arena_bin->offset += sizeof(struct packet_header);
 
-    size_t header_offset = sizeof(struct packet_header);
+    prot->payload_length = arena_bin->offset - (size_t)arena_bin->pool;
 
     while(exit_flag == 0){
-        void* bin_data_loc = &arena_bin->pool[arena_bin->offset + header_offset];
-        scan_bins(bin_data_loc); // fix to just take in base pointer
-        create_binmon_header(&arena_bin->offset - header_offset); // see if right?
+        scan_bins(arena_bin->pool + arena_bin->offset);
+
+        prot->sequence++;
+        prot->packet_type = BINARY_TYPE;
+        // prot->time_stamp = get_log_time(char *buffer, size_t length);
+        prot->crc = 0;///fix later
 
         // push pointer to end of consumer pool
+
 
         sleep(config->g_bin_scan_time);
     }
@@ -88,36 +97,43 @@ void* create_bin_thread(void *context_arg){
 void* create_proc_thread(void *context_arg){
     pin_thread(2, pthread_self());
     proc_status = 1;
+
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
 
     struct Arena *const arena_proc = create_arena();
-    arena_proc->capacity = sizeof(arena_proc->pool);
+    arena_proc->capacity = sizeof(arena_proc->pool); // change to yaml var
     arena_proc->pool = alloc_arena(arena_proc, config->g_proc_pool_size);
 
-    void* start_loc = create_headers(&arena_proc->pool);
+    create_headers(arena_proc->pool);
+    arena_proc->offset = sizeof(struct ether_header) + sizeof(struct iphdr);
 
-    arena_proc->offset = sizeof(start_loc);
+    struct packet_header* prot;
+    arena_proc->offset += sizeof(struct packet_header);
 
-    size_t header_offset = sizeof(struct packet_header);
-    size_t next_proc_offset = header_offset + sizeof(struct proc_data_t);
+    prot->payload_length = arena_proc->offset - (size_t)arena_proc->pool;
 
     while(exit_flag == 0){
-        void* proc_data_loc = &arena_proc->pool[arena_proc->offset + header_offset];
+        prot = binmon_header(arena_proc->pool + arena_proc->offset);
+        arena_proc->offset += sizeof(struct packet_header);
 
-        scan_procs(proc_data_loc);
+        scan_procs(arena_proc->pool + arena_proc->offset); // gets info about one process
 
-        create_binmon_header(&arena_proc->offset - header_offset);
+        prot->payload_length += sizeof(struct proc_data_t);
+        // prot->time_stamp = something
+        prot->sequence++;
+        prot->packet_type = PROC_TYPE;
+        // prot->crc = 0;
         // adjust total size atomic value in main header...then just reset it
         // once done
 
         // push pointer to end of consumer pool
-        arena_proc->offset += next_proc_offset;
+        CHECK_ERROR(
+            (size_t)(arena_proc->pool + arena_proc->offset) +
+            sizeof(struct proc_data_t) >= arena_proc->capacity,
+            "arena proc filled capacity"
+        );
 
-
-        //
-        // sig atomic???
-        //
-
+        arena_proc->offset += sizeof(struct proc_data_t);
         sleep(config->g_delta_program);
     }
 
@@ -133,7 +149,8 @@ void* create_send_thread(void *context_arg){
     struct Arena *const arena_send = create_arena();
     arena_send->capacity = sizeof(arena_send->pool);
     arena_send->pool = alloc_arena(arena_send, config->g_send_pool_size);
-    arena_send->offset = arena_send->pool;
+    arena_send->offset = 0;
+
     while(exit_flag == 0){
         // have condition set that gets pushed when data is in both producers
         // pointers get pushed from producers and put in this queue...
@@ -151,16 +168,19 @@ void* create_send_thread(void *context_arg){
     return NULL;
 }
 
-
 void init_context(struct thread_context_t *const thread_context){
 
-    int fd = server_connect();
-
     // not sure if i should use unlikely here???
-    if(unlikely(pthread_mutex_init(&thread_context->packet_header_lock, NULL) != 0)){
-        LOG("Failed to create packet_header_lock mutex");
-        exit(EXIT_FAILURE);
-    }
+    // if(unlikely(pthread_mutex_init(&thread_context->packet_header_lock, NULL) != 0)){
+    //     LOG("Failed to create packet_header_lock mutex");
+    //     exit(EXIT_FAILURE);
+    // }
+    CHECK_ERROR(unlikely(pthread_mutex_init(
+        &thread_context->packet_header_lock, NULL) != 0),
+        "Failed to create packet_header_lock mutex"
+    );
+
+    // should really consider if this check_error thing is actually worth it
 
     if(unlikely(pthread_mutex_init(&thread_context->pack_lock, NULL) != 0)){
         LOG("Failed to create pack_lock mutex");
@@ -177,7 +197,7 @@ void init_context(struct thread_context_t *const thread_context){
         exit(EXIT_FAILURE);
     }
 
-    thread_context->socket_fd = fd;
+    thread_context->socket_fd = server_connect();
 }
 
 void destroy_mutexes(struct thread_context_t *const mutex_context){

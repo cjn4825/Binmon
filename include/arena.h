@@ -1,6 +1,7 @@
 #ifndef ARENA_H
 #define ARENA_H
 
+#include <stdint.h>
 #include <unistd.h>
 
 #define INIT_ARENA_SIZE 50000 // 50KB in bytes
@@ -14,11 +15,10 @@
 
 // use malloc for beat, health and other small ones...mmap for large ones like
 // bin and ring buffer
-
 struct Arena {
   size_t capacity;
   size_t offset;
-  void *pool; // could use restrict but does not work for some reason
+  uint8_t *pool;
 };
 
 struct Arena *create_arena(void);

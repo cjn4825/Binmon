@@ -60,6 +60,10 @@ static void update_stats(
             char *source_location = &p_stats[left_index];
 
             if(data->proc_flags.v.not_missing == 0){
+
+
+                // this whole section is wrong since all the cases need to be meant once
+                // but this loops only once
                 switch (stat_value_place) {
                     case PID:
                         data->pid.t = PID_TYPE;
@@ -249,6 +253,11 @@ void scan_procs(void *offset_loc){
 
     CHECK_ERROR(unlikely(dir_num == -1), "error using scandir");
 
+    //
+    //
+    // needs to change so this returns info about reach process...not all the processes
+    //
+    //
     for(size_t i = 0; i < dir_num; i++) {
         if(dir_list[i] != NULL){
             int pid = atoi(dir_list[i]->d_name);

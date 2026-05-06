@@ -6,7 +6,7 @@
 
 #include "../include/protocol.h"
 
-static inline void create_frame(void *ether_loc){
+static void create_frame(void *ether_loc){
     // set mac address by grabbing it from host...for now hardcode an example
     struct ether_header *eth = (struct ether_header *)ether_loc;
 
@@ -33,7 +33,7 @@ static inline void create_frame(void *ether_loc){
 #define SRC 127001
 #define DST 127001
 
-static inline void create_packet(void *pack_loc){
+static void create_packet(void *pack_loc){
     struct iphdr *ip = (struct iphdr *)pack_loc;
 
     ip->saddr = SRC; // localhost...not sure if this is right
@@ -41,30 +41,18 @@ static inline void create_packet(void *pack_loc){
     ip->protocol = IPPROTO_UDP; // again not right probably
 }
 
-void* create_binmon_header(void *header_loc){
+struct packet_header* binmon_header(void *header_loc){
     struct packet_header *ph = (struct packet_header*)header_loc;
 
+    // init this better
+
     ph->magic_number = MAGIC_NUMBER;
-    ph->packet_type = PACKET_TYPE;
-    ph->time_stamp = // helper funtion in utils to get time
-    ph->payload_length += // loop through all types and get tlv values? or is it fixed size?
-                          // do i even need the lenght?
-    ph->sequence++; // do i need this either? am i using udp or tcp?
-    ph->crc = 0; //temp not sure if i need this here or within the actual headers
     ph->version = VERSION;
 
-    return 0;
+    return ph;
 }
 
-void* create_headers(void *area){
-
-    create_frame(area);
-    area += sizeof(struct ether_header);
-
-    create_packet(area);
-    area += sizeof(struct ether_header);
-
-    create_binmon_header(area);
-
-    return area;
+void create_headers(void *offset){
+    create_frame(offset);
+    create_packet(offset + sizeof(struct ether_header));
 }

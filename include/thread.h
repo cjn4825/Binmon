@@ -15,15 +15,6 @@ struct thread_context_t {
     // size_t head;
     // size_t current_size;
     int socket_fd;                          // global file discriptor for the server connection
-
-    struct proc_info_t *p_proc_info;        // global pointer to process information
-    struct proc_info_t *p_bin_info;         // global pointer to binary information
-    // struct proc_info_t *p_beat_info;        // info for the beat?? think should be removed?
-    char *proc_header_buf;                  // determine if these are needed?
-    char *bin_header_buf;
-    char *beat_header_buf;
-    char *proc_data_buf;
-    char *bin_data_buf;
 };
 
 extern sig_atomic_t exit_flag;
