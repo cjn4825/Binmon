@@ -4,78 +4,62 @@
 // #include <string.h>
 // #include <unistd.h>
 
+#include <stdatomic.h>
+#include <stddef.h>
+#include <stdlib.h>
+
 // #include "../include/proctypes.h"
 // #include "../include/logging.h"
 // #include "../include/thread.h"
-// #include "../include/settings.h"
+#include "../include/settings.h"
+#include "../include/send_data.h"
+
+struct send_queue* send_init(){
+    struct send_queue *q = malloc(sizeof(struct send_queue));
+    q->pool = malloc(config->g_send_pool_size);
+
+    atomic_init(&q->head, 0); // might need to move these to the main thread?
+    atomic_init(&q->tail, 0);
 
 
-// notes:
-//    commented out for now but plan on resuing this code i think?...probably since im switching to using af_xdp
+    // also need to make all malloc calls done before the program really starts as in before the threads start
 
-
-void get_producer_data(){
-
+    return q;
 
 }
-// void send_packet(struct thread_context_t *context, int type){
-//     pthread_mutex_lock(&context->send_data_lock);
 
-//     size_t total_packet_size;
-//     // find better way of doing this
-//     //
-//     //
-//     char *packet_buffer;
-//     if(type == PROC){
-//         total_packet_size = context->p_proc_info->total_ph_size +
-//                                    context->p_proc_info->total_tlv_size;
-//         char packet_buffer[total_packet_size];
-//         memcpy(&packet_buffer, &context->proc_header_buf, context->p_proc_info->total_ph_size);
-//         memcpy(
-//             &packet_buffer[context->p_proc_info->total_ph_size],
-//             &context->proc_data_buf,
-//             context->p_proc_info->total_tlv_size
-//         );
-//     }
-//     else if (type == BIN) {
-//         total_packet_size = context->p_bin_info->total_ph_size +
-//                                    context->p_bin_info->total_tlv_size;
-//         char packet_buffer[total_packet_size];
-//         memcpy(&packet_buffer, &context->bin_header_buf, context->p_bin_info->total_ph_size);
-//         memcpy(
-//             &packet_buffer[context->p_bin_info->total_ph_size],
-//             &context->bin_data_buf,
-//             context->p_bin_info->total_tlv_size
-//         );
-//     }
-//     else if (type == BEAT) {
-//         total_packet_size = sizeof(struct packet_header);
-//         char packet_buffer[total_packet_size];
-//         memcpy(&packet_buffer, &context->beat_header_buf, sizeof(struct packet_header));
-//         // no data needed???
-//     }
-//     else{
-//         LOG("wrong type passed in");
-//         exit(EXIT_FAILURE);
-//     }
+int send_push(struct send_queue* q, void* data){
 
-//     // split file up to copy data into a ring buffer instead of temp one and then have
-//     // the other thread read
-//     size_t total_sent = 0;
-//     while(total_sent < total_packet_size) {
-//         ssize_t sent = send(context->socket_fd, packet_buffer + total_sent,
-//                             total_packet_size - total_sent, 0);
 
-//         if(unlikely(sent < 0)){
-//             LOG("data was not sent");
-//             close(context->socket_fd);
-//             exit(EXIT_FAILURE);
-//         }
+    // isn't tail not updated? why... also i don't think this makes sense since im just reading
+    // and i don't think this gets updated?
 
-//         total_sent += sent;
-//     }
+    size_t curr_tail = atomic_load_explicit(&q->tail, memory_order_relaxed);
+    size_t curr_head = atomic_load_explicit(&q->head, memory_order_acquire);
 
-//     close(context->socket_fd);
-//     g_finished = 1;
-//     pthread_mutex_unlock(&context->send_data_lock);
-// }
+    if(curr_tail - curr_head >= config->g_send_pool_size){
+        return -1;
+    }
+
+    data = (void*)((size_t)(q->pool + curr_tail) & (config->g_send_pool_size - 1));
+
+    // why not use atomic_fetch_add_explicit?
+    atomic_store_explicit(&q->tail, curr_tail++, memory_order_release);
+    return 0;
+
+}
+
+// why use a void**?
+int send_pop(struct send_queue *q, void** out_data){
+    size_t curr_head = atomic_load_explicit(&q->head, memory_order_relaxed);
+    size_t curr_tail = atomic_load_explicit(&q->tail, memory_order_acquire);
+
+    if(curr_head == curr_tail){
+        return -1;
+    }
+
+    *out_data = (void**)((size_t)(q->pool + curr_head) & (config->g_send_pool_size - 1));
+
+    atomic_store_explicit(&q->head, curr_head++, memory_order_release);
+    return 0;
+}

@@ -16,9 +16,10 @@
 // use malloc for beat, health and other small ones...mmap for large ones like
 // bin and ring buffer
 struct Arena {
-  size_t capacity;
-  size_t offset;
-  uint8_t *pool;
+    _Atomic int in_use;
+    size_t capacity;
+    size_t offset;
+    uint8_t *pool;
 };
 
 struct Arena *create_arena(void);

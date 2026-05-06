@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -12,8 +13,8 @@ static inline int mmap_size(){
 }
 
 struct Arena* create_arena(void){
-
-    char* p = malloc(sizeof(struct Arena));
+    // this is wrong
+    uint8_t* p = malloc(sizeof(struct Arena));
 
     CHECK_ERROR(unlikely(p == NULL), "could not mmap Arena pool");
 

@@ -8,10 +8,15 @@
 #include "../include/thread.h"
 
 //TODO:
+// // finish producer consumer code
+//      // make sure that if a structure has variables that are modified
+//      // by multiple threads that they are not in the same cache line
+//      // with alignas(64)
+// // switch to lower case macro function names
 // // switch to timer_fd create instead of sleep
 //
+//fix signinit for exiting
 //log telemtry such as packet count...data size ect...
-//alignas for thread structs
 //simd and vectorization
 //ring buffer...use af_xdp
 //make yaml keys not dependent on order

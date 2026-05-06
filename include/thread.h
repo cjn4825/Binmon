@@ -4,11 +4,19 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include "../include/send_data.h"
+
 struct thread_context_t {
     pthread_mutex_t packet_header_lock;     // lock for building packet header
     pthread_mutex_t pack_lock;              // lock for packing data into tlv
     pthread_mutex_t send_buffer_lock;       // lock for ...
     pthread_mutex_t send_data_lock;
+
+    struct send_queue *queue_proc;
+    struct send_queue *queue_bin;
+    uint8_t *pool_proc;
+    uint8_t *pool_bin;
+
     // pthread_cond_t launch_data;             // condition for threads...
     // size_t capacity;                     // max size of arena... should be in arena struct
     // size_t tail;

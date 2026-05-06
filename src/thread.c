@@ -1,3 +1,4 @@
+#include <threads.h>
 #define _GNU_SOURCE
 #include <net/ethernet.h>
 #include <netinet/ip.h>
@@ -61,6 +62,13 @@ void* create_healthbeat_thread(void *context_arg){
 void* create_bin_thread(void *context_arg){
     pin_thread(1, pthread_self());
 
+
+
+
+    // once data is written set it in_use = 1
+
+
+
     bin_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
     // if mutexes arn't used then a context isn't needed here
@@ -68,6 +76,7 @@ void* create_bin_thread(void *context_arg){
     struct Arena *const arena_bin = create_arena();
     arena_bin->capacity = sizeof(arena_bin->pool); // change to yaml variable
     arena_bin->pool = alloc_arena(arena_bin, config->g_bin_pool_size);
+    context->pool_bin = arena_bin->pool;
 
     create_headers(arena_bin->pool);
     arena_bin->offset = sizeof(struct ether_header) + sizeof(struct iphdr);
@@ -76,17 +85,16 @@ void* create_bin_thread(void *context_arg){
     arena_bin->offset += sizeof(struct packet_header);
 
     prot->payload_length = arena_bin->offset - (size_t)arena_bin->pool;
+    prot->packet_type = BINARY_TYPE;
 
     while(exit_flag == 0){
         scan_bins(arena_bin->pool + arena_bin->offset);
 
         prot->sequence++;
-        prot->packet_type = BINARY_TYPE;
         // prot->time_stamp = get_log_time(char *buffer, size_t length);
         prot->crc = 0;///fix later
 
-        // push pointer to end of consumer pool
-
+        send_push(context->queue_bin, arena_bin->pool + arena_bin->offset);
 
         sleep(config->g_bin_scan_time);
     }
@@ -95,6 +103,15 @@ void* create_bin_thread(void *context_arg){
 }
 // goal is to add proces values as fast as possible to the pool
 void* create_proc_thread(void *context_arg){
+
+
+
+
+
+    // once data is written set it in_use = 1
+
+
+
     pin_thread(2, pthread_self());
     proc_status = 1;
 
@@ -103,6 +120,7 @@ void* create_proc_thread(void *context_arg){
     struct Arena *const arena_proc = create_arena();
     arena_proc->capacity = sizeof(arena_proc->pool); // change to yaml var
     arena_proc->pool = alloc_arena(arena_proc, config->g_proc_pool_size);
+    context->pool_proc = arena_proc->pool;
 
     create_headers(arena_proc->pool);
     arena_proc->offset = sizeof(struct ether_header) + sizeof(struct iphdr);
@@ -126,7 +144,7 @@ void* create_proc_thread(void *context_arg){
         // adjust total size atomic value in main header...then just reset it
         // once done
 
-        // push pointer to end of consumer pool
+        send_push(context->queue_proc, arena_proc->pool + arena_proc->offset);
         CHECK_ERROR(
             (size_t)(arena_proc->pool + arena_proc->offset) +
             sizeof(struct proc_data_t) >= arena_proc->capacity,
@@ -142,25 +160,23 @@ void* create_proc_thread(void *context_arg){
 
 // used as the consumer thread
 void* create_send_thread(void *context_arg){
-    pin_thread(3, pthread_self());
+    pin_thread(3, pthread_self()); // should i even pin this?
     send_status = 1;
     struct thread_context_t *const context = (struct thread_context_t *const)context_arg;
 
-    struct Arena *const arena_send = create_arena();
-    arena_send->capacity = sizeof(arena_send->pool);
-    arena_send->pool = alloc_arena(arena_send, config->g_send_pool_size);
-    arena_send->offset = 0;
+    context->queue_proc = send_init();
+    context->queue_bin = send_init();
+
+    void* data = NULL;
 
     while(exit_flag == 0){
-        // have condition set that gets pushed when data is in both producers
-        // pointers get pushed from producers and put in this queue...
-        // then calls af_xdp or whatever to then push the packet
 
-        // how to determine the type???
-        void* data = get_producer_data();
-
-        // function that tell af_xdp to send the data
-        // then move offset pointer only if not less then base pointer
+        if(send_pop(context->queue_proc, &data)){
+            // send the data to af_xdp ring buffer
+        }
+        else if(send_pop(context->queue_bin, data)){
+            // send the data to af_xdp ring buffer
+        }
 
         usleep(config->g_delta_program);
     }
