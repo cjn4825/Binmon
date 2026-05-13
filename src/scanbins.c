@@ -1,12 +1,10 @@
 #include <dirent.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
 #include "../include/logging.h"
 #include "../include/bintypes.h"
-#include "../include/settings.h"
 
 static void craw_bins(struct bin_data_t *data, const char *bin_path){
     // once proccesses are scanned then it can manually craw /bin or /usr/bin or /tmp or user home
@@ -83,7 +81,7 @@ static void craw_bins(struct bin_data_t *data, const char *bin_path){
 }
 
 void scan_bins(void *offset_loc){
-    struct bin_data_t *data = (struct bin_data_t *)offset_loc;
+    struct bin_data_t *data = offset_loc;
 
     const char *locations[] = {
         "/bin",

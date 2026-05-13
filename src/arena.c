@@ -1,16 +1,9 @@
 #include <assert.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include <unistd.h>
 
 #include "../include/arena.h"
 #include "../include/logging.h"
-
-static inline int mmap_size(){
-    return INIT_ARENA_SIZE - (INIT_ARENA_SIZE % getpagesize()) + getpagesize();
-}
 
 struct Arena* create_arena(void){
 
@@ -18,11 +11,13 @@ struct Arena* create_arena(void){
 
     CHECK_ERROR(unlikely(p == NULL), "could not mmap Arena pool");
 
+    size_t mmap_size = INIT_ARENA_SIZE - (INIT_ARENA_SIZE % getpagesize()) + getpagesize();
+
     struct Arena *a = mmap(
         NULL,
-        mmap_size(),
+        mmap_size,
         PROT_READ | PROT_WRITE,
-        MAP_ANONYMOUS | MAP_PRIVATE,       // this whole thing is wrong research later
+        MAP_ANONYMOUS | MAP_PRIVATE,
         -1,
         0
     );

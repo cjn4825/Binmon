@@ -7,6 +7,11 @@
 // compiler hint macro for unlikely if statement results
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
+// for figuring out the type of element in yaml parsing
+#define STATE_NONE 0
+#define STATE_KEY 1
+#define STATE_VALUE 2
+
 // macro for handling errors
 #define CHECK_ERROR(input, message)                                         \
     do {                                                                    \

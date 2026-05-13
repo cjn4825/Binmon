@@ -15,8 +15,8 @@ int server_connect(void){
     CHECK_ERROR(unlikely(sock_fd < 0), "socket could not be created");
 
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(config->g_port);
-    server_address.sin_addr.s_addr = inet_addr(config->g_server_address);
+    server_address.sin_port = htons(g_config->g_port);
+    server_address.sin_addr.s_addr = inet_addr(g_config->g_server_address);
 
     while(backoff <= (backoff * 5)){
         if(connect(sock_fd, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){

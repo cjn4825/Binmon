@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -5,8 +6,6 @@
 
 #include "../include/logging.h"
 #include "../include/settings.h"
-
-struct Config *const config;
 
 void get_log_time(char *buffer, size_t length){
     time_t now = time(NULL);
@@ -17,86 +16,96 @@ void get_log_time(char *buffer, size_t length){
 void import_settings(const char *const path){
     FILE *p_file = fopen(path, "r");
     yaml_parser_t parser;
-    yaml_event_t event;
+    yaml_token_t token;
 
-    CHECK_ERROR(
-        unlikely(!yaml_parser_initialize(&parser)),
-        "could not init yaml parser..."
-    );
+    char *last_key = NULL;
+    int state = STATE_NONE;
+    int done;
 
-    CHECK_ERROR(
-        unlikely(p_file == NULL),
-        "could not open yaml settings file..."
-    );
+    g_config = calloc(1, sizeof(struct config_t));
+
+    CHECK_ERROR(unlikely(!yaml_parser_initialize(&parser)), "could not init yaml parser");
+    CHECK_ERROR(unlikely(g_config == NULL), "could not allocate g_config struct");
+    CHECK_ERROR(unlikely(p_file == NULL), "could not open yaml settings file");
 
     yaml_parser_set_input_file(&parser, p_file);
 
-    int i = 0;
-    while(1){
-        if(!yaml_parser_parse(&parser, &event)){
-            break;
-        }
+    while(!done){
+        if(!yaml_parser_scan(&parser, &token)) break;
 
-        if(event.type == YAML_SCALAR_EVENT){
+        switch (token.type){
+            case YAML_KEY_TOKEN:
+                state = STATE_KEY;
+                break;
+            case YAML_VALUE_TOKEN:
+                state = STATE_VALUE;
+                break;
+            case YAML_SCALAR_TOKEN: {
+                char *value = (char *)token.data.scalar.value;
 
-            yaml_char_t *value = event.data.scalar.value;
-            //
-            //change so it goes by key value not position to
-            //set variables
-            switch (i) {
-                case 0:
-                    g_log_value = *value; // change to be part of config?
-                    break;
-                case 1:
-                    config->g_port = *value;
-                    break;
-                case 2:
-                    config->g_server_address = (const char*)value;
-                    break;
-                case 3:
-                    config->g_proc_pool_size = *value;
-                    break;
-                case 4:
-                    config->g_bin_pool_size = *value;
-                    break;
-                case 5:
-                    config->g_send_pool_size = *value;
-                    break;
-                case 6:
-                    config->g_delta_program = *value;
-                    break;
-                case 7:
-                    config->g_resize_percentage = *value / 100;
-                    break;
-                case 8:
-                    config->g_default_old = *value;
-                    break;
-                case 9:
-                    config->g_default_max = *value;
-                    break;
-                case 10:
-                    config->g_stats_length = *value;
-                    break;
-                case 11:
-                    config->g_bin_scan_time = *value;
-                    break;
-                case 12:
-                    config->g_health_scan_time = *value;
-                    break;
-                case 13:
-                    config->g_beat_scan_time = *value;
-                    break;
+                if(state == STATE_KEY){
+                    if(last_key) free(last_key);
+                    last_key = strdup(value);
+                }
+                else if(state == STATE_VALUE && last_key){
+                    if(strcmp(last_key, "port") == 0){
+                        g_config->g_port = atoi(value);
+                    }
+                    else if(strcmp(last_key, "delta_program") == 0){
+                        g_config->g_delta_program = atoi(value);
+                    }
+                    else if(strcmp(last_key, "resize_percentage") == 0){
+                        g_config->g_resize_percentage = atoi(value);
+                    }
+                    else if(strcmp(last_key, "proc_pool_size") == 0){
+                        g_config->g_proc_pool_size = atoi(value);
+                    }
+                    else if(strcmp(last_key, "bin_pool_size") == 0){
+                        g_config->g_bin_pool_size = atoi(value);
+                    }
+                    else if(strcmp(last_key, "send_pool_size") == 0){
+                        g_config->g_send_pool_size = atoi(value);
+                    }
+                    else if(strcmp(last_key, "default_old") == 0){
+                        // input in days output in seconds
+                        g_config->g_default_old = 86400 * atoi(value);
+                    }
+                    else if(strcmp(last_key, "default_max") == 0){
+                        g_config->g_default_max = atoi(value);
+                    }
+                    else if(strcmp(last_key, "stats_length") == 0){
+                        g_config->g_stats_length = atoi(value);
+                    }
+                    else if(strcmp(last_key, "bin_scan_time") == 0){
+                        g_config->g_bin_scan_time = atoi(value);
+                    }
+                    else if(strcmp(last_key, "health_scan_time") == 0){
+                        g_config->g_health_scan_time = atoi(value);
+                    }
+                    else if(strcmp(last_key, "beat_scan_time") == 0){
+                        g_config->g_beat_scan_time = atoi(value);
+                    }
+                    else if(strcmp(last_key, "server_address") == 0){
+                        if(strlen(value) > 12){
+                            value = "127.0.0.1";
+                        }
+                        memcpy(g_config->g_server_address, value, strlen(value));
+                    }
+                }
+
+                break;
             }
+
+            case YAML_STREAM_END_TOKEN:
+                done = 1;
+                break;
+
+            default: break;
         }
 
-        if(event.type == YAML_STREAM_END_EVENT){
-            break;
-        }
-
-        i++;
-        yaml_event_delete(&event);
+        yaml_token_delete(&token);
+        if(last_key) free(last_key);
+        yaml_parser_delete(&parser);
+        fclose(p_file);
     }
-
-    yaml_parser_delete(&parser);
-    fclose(p_file);
 }

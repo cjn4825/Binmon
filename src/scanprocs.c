@@ -3,12 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
 
 #include "../include/proctypes.h"
-#include "../include/protocol.h"
 #include "../include/logging.h"
 #include "../include/settings.h"
 
@@ -194,7 +192,7 @@ static void update_stats(
             data->last_modified.v = file_stats->st_mtim.tv_sec;
             data->last_status.v = file_stats->st_ctim.tv_sec;
 
-            if(data->last_access.v >= config->g_default_old){
+            if(data->last_access.v >= g_config->g_default_old){
                 data->proc_flags.v.is_old = 1;
             }
 
@@ -221,7 +219,7 @@ static char *get_symlink_path(int pid){
     );
 
     ssize_t link_length = readlink(path, exe, sizeof(exe) - 1);
-    assert(link_length == strlen(exe)); // try to find other places to put assert and fix this one
+    assert(link_length == strlen(exe));
 
     CHECK_ERROR(unlikely(link_length == -1), "symlink could not be found");
 
@@ -281,7 +279,7 @@ void scan_procs(void *offset_loc){
                 LOG("could not get info");
                 exit(EXIT_FAILURE);
             }
-
+            free(p_exe);
             fclose(p_file);
         }
 

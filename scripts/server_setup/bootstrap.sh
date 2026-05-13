@@ -5,7 +5,6 @@
 
 # assumes ubuntu for now
 if ! command -v docker >/dev/null 2>&1; then
-    # will update to use package manager later??
     curl -fsSL "https://get.docker.com" -o get-docker.sh
     sh ./get-docker.sh
     rm get-docker.sh

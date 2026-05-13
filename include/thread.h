@@ -25,6 +25,5 @@ void* create_send_thread(void *context_arg);
 void* create_bin_thread(void *context_arg);
 void* create_proc_thread(void *context_arg);
 void init_context(struct thread_context_t *thread_context);
-// void destroy_mutexes(struct thread_context_t *thread_context);
 
 #endif // !THREAD_H
