@@ -8,16 +8,18 @@
 #include "../include/thread.h"
 
 //TODO:
+/*  put mem allocations in main before program starts
+ *  expand on thread context struct to be used for that
+ */
 // // finish producer consumer code
 //      // make sure that if a structure has variables that are modified
 //      // by multiple threads that they are not in the same cache line
 //      // with alignas(64)
-// // switch to lower case macro function names
 // // switch to timer_fd create instead of sleep
 //
-//fix signinit for exiting
+//restrict keyword
+//
 //log telemtry such as packet count...data size ect...
-//simd and vectorization
 //ring buffer...use af_xdp
 //make yaml keys not dependent on order
 //max out to 50 mb of memory usage then exit safely similar with cpu usage...
@@ -28,6 +30,7 @@
 //virus total api with redis database
 //tls certs with tcp connections
 //finish bootstrap scripts and ansible
+//io_uring implementation
 //update github page
 
 int main(void){
@@ -45,13 +48,15 @@ int main(void){
     CREATE_THREAD(heart_beat_thread, create_beat_thread);
     CREATE_THREAD(health_check_thread, create_healthbeat_thread);
 
+    // only just need main to wait here so i probably don't need to do
+    // this with every thread
     pthread_join(proc_thread, NULL);
     pthread_join(bin_thread, NULL);
     pthread_join(send_data_thread, NULL);
     pthread_join(heart_beat_thread, NULL);
     pthread_join(health_check_thread, NULL);
 
-    destroy_mutexes(thread_context);
+    // destroy_mutexes(thread_context);
     free(thread_context);
 
     return 0;

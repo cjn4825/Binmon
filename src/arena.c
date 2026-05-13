@@ -13,7 +13,7 @@ static inline int mmap_size(){
 }
 
 struct Arena* create_arena(void){
-    // this is wrong
+
     uint8_t* p = malloc(sizeof(struct Arena));
 
     CHECK_ERROR(unlikely(p == NULL), "could not mmap Arena pool");

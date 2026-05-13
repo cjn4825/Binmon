@@ -1,14 +1,8 @@
-#include <threads.h>
 #define _GNU_SOURCE
 #include <net/ethernet.h>
 #include <netinet/ip.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <pthread.h>
-#include <sched.h>
-#include <stdatomic.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "../include/logging.h"
 #include "../include/thread.h"
@@ -17,8 +11,6 @@
 #include "../include/settings.h"
 #include "../include/proctypes.h"
 #include "../include/bintypes.h"
-#include "../include/utils.h"
-#include "../include/send_data.h"
 #include "../include/server_connect.h"
 
 void pin_thread(int core, pthread_t thread){
@@ -66,7 +58,6 @@ void* create_bin_thread(void *context_arg){
 
 
     // once data is written set it in_use = 1
-
 
 
     bin_status = 1;
@@ -186,39 +177,11 @@ void* create_send_thread(void *context_arg){
 
 void init_context(struct thread_context_t *const thread_context){
 
-    // not sure if i should use unlikely here???
-    // if(unlikely(pthread_mutex_init(&thread_context->packet_header_lock, NULL) != 0)){
-    //     LOG("Failed to create packet_header_lock mutex");
-    //     exit(EXIT_FAILURE);
-    // }
-    CHECK_ERROR(unlikely(pthread_mutex_init(
-        &thread_context->packet_header_lock, NULL) != 0),
-        "Failed to create packet_header_lock mutex"
-    );
-
-    // should really consider if this check_error thing is actually worth it
-
-    if(unlikely(pthread_mutex_init(&thread_context->pack_lock, NULL) != 0)){
-        LOG("Failed to create pack_lock mutex");
-        exit(EXIT_FAILURE);
-    }
-
-    if(unlikely(pthread_mutex_init(&thread_context->send_buffer_lock, NULL) != 0)){
-        LOG("Failed to create send_buffer_lock mutex");
-        exit(EXIT_FAILURE);
-    }
-
-    if(unlikely(pthread_mutex_init(&thread_context->send_data_lock, NULL) != 0)){
-        LOG("Failed to create send_data_lock mutex");
-        exit(EXIT_FAILURE);
-    }
-
+    // had mutex info as well but removed since i don't think i need
+    // them anymore
     thread_context->socket_fd = server_connect();
 }
 
 void destroy_mutexes(struct thread_context_t *const mutex_context){
-    pthread_mutex_destroy(&mutex_context->packet_header_lock);
-    pthread_mutex_destroy(&mutex_context->pack_lock);
-    pthread_mutex_destroy(&mutex_context->send_buffer_lock);
-    pthread_mutex_destroy(&mutex_context->send_data_lock);
+    // same as above
 }
